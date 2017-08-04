@@ -1,0 +1,7 @@
+{
+	"name":"Plugin Manager",
+	"description":"The plugin used to administrate the BBj Plugins: Install, Update, Removal",
+	"version":"0.01",
+	"author":"Basis",
+	"dependencies":[]
+}
