@@ -1,0 +1,21 @@
+[
+    {
+        "name" : "BBjWidget",
+        "description": "Base Class for BBjUIWidgets",
+        "project_url" :"https://github.com/BBj-Plugins/BBjWidget",
+        "last_change" : "2017-08-07T13:23:45Z",
+        "plugin_json" : "https://raw.githubusercontent.com/BBj-Plugins/BBjWidget/master/bbj-plugin.json",
+        "version" : 0.1,
+        "author" : "Basis"
+    },
+
+    {
+        "name" : "BBjLatencyIndicatorWidget",
+        "description" : "A graphical indicator for the UI to show the latency / quality of the connection",
+        "project_url" : "https://github.com/BBj-Plugins/BBjLatencyIndicatorWidget",
+        "last_change" : "2017-08-07T13:01:59Z",
+        "plugin_json" : "https://raw.githubusercontent.com/BBj-Plugins/BBjLatencyIndicatorWidget/master/bbj-plugin.json",
+        "version" : 0.1,
+        "author" : "Basis"
+    }
+]
