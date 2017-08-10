@@ -1,37 +1,37 @@
 [
     {
-        "id"           : 99218968,
+        "id"           :  99218968,
         "name"         : "BBjWidget",
         "description"  : "Base Class for BBjUIWidgets",
         "last_change"  : "2017-08-07T13:23:45Z",
         "project_url"  : "https://github.com/BBj-Plugins/BBjWidget",
         "api_url"      : "https://api.github.com/repos/BBj-Plugins/BBjWidget",
         "download_url" : "https://raw.githubusercontent.com/BBj-Plugins",
-        "version"      : 0.1,
+        "version"      :  0.1,
         "author"       : "Basis"
     },
 
     {
-        "id"           : 99247448,
+        "id"           :  99247448,
         "name"         : "BBjLatencyIndicatorWidget",
         "description"  : "A graphical indicator for the UI to show the latency / quality of the connection",
         "last_change"  : "2017-08-07T13:01:59Z",
         "project_url"  : "https://github.com/BBj-Plugins/BBjLatencyIndicatorWidget",
         "api_url"      : "https://api.github.com/repos/BBj-Plugins/BBjLatencyIndicatorWidget", 
         "download_url" : "https://raw.githubusercontent.com/BBj-Plugins/BBjLatencyIndicatorWidget",
-        "version"      : 0.1,
+        "version"      :  0.1,
         "author"       : "Basis"
     },
 
     {
-        "id"           : 99923740,
-        "name"         :"JnlpExePacker",
-        "description"  :"Uses the BBj Admin API and Launch4j to create .exe files from jnlp applications defined in the EM",
+        "id"           :  99923740,
+        "name"         : "JnlpExePacker",
+        "description"  : "Uses the BBj Admin API and Launch4j to create .exe files from jnlp applications defined in the EM",
         "last_change"  : "2017-08-10T13:06:19Z",
         "project_url"  : "https://github.com/BBj-Plugins/JnlpExePacker",
         "api_url"      : "https://api.github.com/repos/BBj-Plugins/JnlpExePacker", 
         "download_url" : "https://raw.githubusercontent.com/BBj-Plugins/JnlpExePacker",
-        "version"      :"1.0",
-        "author"       :"Basis",
+        "version"      :  1.0,
+        "author"       : "Basis"
     }
 ]
