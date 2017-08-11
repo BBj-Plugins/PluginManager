@@ -33,5 +33,17 @@
         "download_url" : "https://raw.githubusercontent.com/BBj-Plugins/JnlpExePacker",
         "version"      :  1.0,
         "author"       : "Basis"
+    },
+
+    {
+        "id"           :  99212452,
+        "name"         : "BBjSampleWidget",
+        "description"  : "",
+        "last_change"  : "2017-08-11T10:43:57Z",
+        "project_url"  : "https://github.com/BBj-Plugins/BBjSampleWidget",
+        "api_url"      : "https://api.github.com/repos/BBj-Plugins/BBjSampleWidget", 
+        "download_url" : "https://raw.githubusercontent.com/BBj-Plugins/BBjSampleWidget",
+        "version"      :  1.0,
+        "author"       : "Basis"
     }
 ]
