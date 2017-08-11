@@ -45,5 +45,17 @@
         "download_url" : "https://raw.githubusercontent.com/BBj-Plugins/BBjSampleWidget",
         "version"      :  1.0,
         "author"       : "Basis"
+    },
+
+     {
+        "id"           :  100022426,
+        "name"         : "DemoPlugin",
+        "description"  : "Just a demo plugin to play around with",
+        "last_change"  : "2017-08-11T10:55:27Z",
+        "project_url"  : "https://github.com/BBj-Plugins/DemoPlugin",
+        "api_url"      : "https://api.github.com/repos/BBj-Plugins/DemoPlugin", 
+        "download_url" : "https://raw.githubusercontent.com/BBj-Plugins/DemoPlugin",
+        "version"      :  1.0,
+        "author"       : "Basis"
     }
 ]
