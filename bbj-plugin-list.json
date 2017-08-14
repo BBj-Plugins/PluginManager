@@ -10,7 +10,8 @@
         "author"       : "Basis",
         "tags"        : [
                           {
-                              "tag_name" : "master"
+                              "tag_name"    : "master",
+                              "last_change" : "2017-08-07T11:12:57Z"
                           }
                       ]
     },
@@ -26,7 +27,8 @@
         "author"       : "Basis",
         "tags"        : [
                           {
-                              "tag_name" : "master"
+                              "tag_name"    : "master",
+                              "last_change" : "2017-08-07T13:01:59Z"
                           }
                       ]
     },
@@ -42,7 +44,12 @@
         "author"       : "Basis",
         "tags"        : [
                           {
-                              "tag_name" : "master"
+                              "tag_name"    : "master",
+                              "last_change" : "2017-08-10T13:05:57Z"
+                          },
+                          {
+                              "tag_name"    : "BBj_17",
+                              "last_change" : "2017-08-14T09:12:04Z"
                           }
                       ]
     },
@@ -58,12 +65,13 @@
         "author"       : "Basis",
         "tags"        : [
                           {
-                              "tag_name" : "master"
+                              "tag_name"    : "master",
+                              "last_change" : "2017-08-11T10:43:50Z"
                           }
                       ]
     },
 
-     {
+    {
         "id"          :  100022426,
         "name"        : "DemoPlugin",
         "description" : "Just a demo plugin to play around with",
@@ -74,10 +82,12 @@
         "author"      : "Basis",
         "tags"        : [
                           {
-                              "tag_name" : "master"
+                              "tag_name"    : "master",
+                              "last_change" : "2017-08-14T11:01:29Z"
                           },
                           {
-                              "tag_name" : "BBj_17"
+                              "tag_name"    : "BBj_17",
+                              "last_change" : "2017-08-11T11:24:12Z"
                           }
                       ]
     }
