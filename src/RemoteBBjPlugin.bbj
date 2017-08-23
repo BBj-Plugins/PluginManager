@@ -1,0 +1,235 @@
+use ::src/Tag.bbj::Tag
+use ::src/BBjPlugin.bbj::BBjPlugin
+use ::src/PluginDependency.bbj::PluginDependency
+
+use java.util.Iterator
+use java.util.ArrayList
+
+use java.text.SimpleDateFormat
+
+use com.google.gson.JsonArray
+use com.google.gson.JsonObject
+
+class public RemoteBBjPlugin extends BBjPlugin
+
+    field private String apiURL!
+    field private String projectURL!
+    field private Boolean installed!
+    field private ArrayList tagList!
+    field private String downloadURL!
+    
+    method public RemoteBBjPlugin()
+        #tagList! = new ArrayList()
+        #installed! = Boolean.FALSE
+    methodend
+    
+    method public void setTagList(ArrayList tagList!)
+        #tagList! = tagList!
+    methodend
+    
+    rem /**
+    rem  * Sets the value of the installed Boolean value to the given value.
+    rem  * 
+    rem  * @param installed! The Boolean value to set
+    rem  */
+    method public void setInstalled(Boolean installed!)
+        #installed! = installed!
+    methodend
+    
+    rem /**
+    rem  * Returns true if the plugin is installed locally, false otherwise.
+    rem  * 
+    rem  * @return true if the plugin is installed, false otherwise.
+    rem  */
+    method public Boolean isInstalled()
+        methodret #installed!
+    methodend
+    
+    rem /**
+    rem  * Return true if the plugin is a development plugin, false otherwise.
+    rem  * A developmnent plugin has no other tags than the master tag.
+    rem  * 
+    rem  * @return true if it is a development plugin, false otherwise. 
+    rem  */
+    method public Boolean isDevelopmentPlugin()
+        if(#tagList! = null()) then
+            throw "The remote plugin's tag list is empty",  255
+        endif
+        
+        methodret (#tagList!.size() = 1)
+    methodend
+    
+    rem /**
+    rem  * Returns the Tag object of this plugin with the given tag name. 
+    rem  * Returns null if this plugin has no tag with the specified name.
+    rem  * 
+    rem  * @return The tag of this plugin matching the given name, 
+    rem  * or null if no tag was found for the given name.
+    rem  */
+    method public Tag getTag(String tagName!)
+        declare Iterator it!
+        it! = #tagList!.iterator()
+        
+        declare Tag tag!
+        
+        while(it!.hasNext())
+            tag! = cast(Tag, it!.next())
+
+            if(tag!.getName().equals(tagName!)) then
+                methodret tag!
+            endif
+        wend
+        
+        methodret null()
+    methodend
+    
+    rem /**
+    rem  * Returns the list with all tag objects of this plugin, 
+    rem  * including the master tag in case the boolean parameter is set to true, without otherwise. 
+    rem  * 
+    rem  * @param includeMaster! The boolean value used to include or exlcude the master Tag from the list.
+    rem  * 
+    rem  * @return A list with all Tag objects of this plugin
+    rem  */
+    method public ArrayList getTagList(Boolean includeMaster!)
+        if(#tagList! = null()) then
+            methodret new ArrayList()
+        endif
+        
+        if(includeMaster!) then
+            methodret #tagList!
+        endif
+    
+        declare Iterator it!
+        it! = #tagList!.iterator()
+        
+        declare Tag tag!
+        declare ArrayList tagList!
+        
+        tagList! = new ArrayList() 
+        
+        while(it!.hasNext())
+            tag! = cast(Tag, it!.next())
+
+            if(!tag!.getName().equals("master")) then
+                  tagList!.add(tag!)
+            endif
+        wend
+        
+        methodret tagList!
+    methodend
+    
+    rem /**
+    rem  * Returns a list of all tag object names. The boolean parameter is used to specify 
+    rem  * whether to include the master tag name into the list or not.
+    rem  * 
+    rem  * @param includeMaster! The boolean value which is used to determine whether to 
+    rem  *                       include the master tag's name into the list or not
+    rem  * 
+    rem  * @return A list with all tag names for this plugin.
+    rem  * 
+    rem  */
+    method public ArrayList getTagNameList(Boolean includeMaster!)
+        if(#tagList! = null()) then
+            methodret new ArrayList()
+        endif
+    
+        declare Iterator it!
+        it! = #getTagList(includeMaster!).iterator()
+        
+        declare Tag tag!
+        declare ArrayList tagNameList!
+        
+        tagNameList! = new ArrayList() 
+        
+        while(it!.hasNext())
+            tag! = cast(Tag, it!.next())
+            tagNameList!.add(tag!.getName())
+        wend
+        
+        methodret tagNameList!
+    methodend
+    
+    rem /**
+    rem  * Returns true if this plugin has a tag with the given name, false otherwise.
+    rem  * 
+    rem  * @param tagName! The name of the tag.
+    rem  * 
+    rem  * @return true if the plugin has a tag with the given name, false otherwise.
+    rem  */
+    method public Boolean hasTag(String tagName!)
+        if(#tagList! = null()) then
+            methodret Boolean.FALSE
+        endif
+    
+        declare Iterator it!
+        it! = #tagList!.iterator()
+        
+        declare Tag tag!
+        
+        while(it!.hasNext())
+            tag! = cast(Tag, it!.next())
+            
+            if(tag!.getName().equals(tagName!)) then
+                methodret Boolean.TRUE
+            endif
+        wend
+        
+        methodret Boolean.FALSE
+    methodend
+    
+    rem /**
+    rem  * Sets the plugin's project URL to the given value.
+    rem  * 
+    rem  * @param projectURL! The project URL to set.
+    rem  */
+    method public void setProjectURL(String projectURL!)
+        #projectURL! = projectURL!
+    methodend
+    
+    rem /**
+    rem  * Returns the plugin's project URL.
+    rem  * 
+    rem  * @return The plugin's project URL.
+    rem  */
+    method public String getProjectURL()
+        methodret #projectURL!
+    methodend
+    
+    rem /**
+    rem  * Sets the plugin project's Github API URL to the given value.
+    rem  * 
+    rem  * @param apiURL! The plugin project's Github API URL to set.
+    rem  */
+    method public void setApiURL(String apiURL!)
+        #apiURL! = apiURL!
+    methodend
+    
+    rem /**
+    rem  * Returns the plugin's Github API URL.
+    rem  * 
+    rem  * @return Returns the plugin's Github API URL.
+    rem  */
+    method public String getApiURL()
+        methodret #apiURL!
+    methodend
+    
+    rem /**
+    rem  * Sets the plugin project's Download URL to the given value.
+    rem  * 
+    rem  * @param downloadURL! The plugin project's Download URL to set.
+    rem  */
+    method public void setDownloadURL(String downloadURL!)
+        #downloadURL! = downloadURL!
+    methodend
+    
+    rem /**
+    rem  * Returns the plugin's project Github Download URL.
+    rem  * 
+    rem  * @return Returns the plugin's project Github Download URL.
+    rem  */
+    method public String getDownloadURL()
+        methodret #downloadURL!
+    methodend
+    
+classend

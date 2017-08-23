@@ -1,0 +1,98 @@
+class public BBjPlugin
+
+    field private BBjNumber id
+    
+    field private String name!
+    field private String description!
+    field private String version!
+    field private String author! 
+    
+    method public BBjPlugin()
+    methodend
+    
+    method public void setID(BBjNumber id)
+        #id = id
+    methodend
+    
+    method public BBjNumber getID()
+        methodret #id
+    methodend
+    
+    method public void setName(String name!)
+        #name! = name!
+    methodend
+    
+    method public String getName()
+        methodret #name!
+    methodend
+    
+    method public void setDescription(String description!)
+        #description! = description!
+    methodend
+    
+    method public String getDescription()
+        methodret #description!
+    methodend
+    
+    method public void setVersion(String version!)
+        #version! = version!
+    methodend
+    
+    method public String getVersion()
+        methodret #version!
+    methodend
+    
+    method public void setAuthor(String author!)
+        #author! = author!
+    methodend
+    
+    method public String getAuthor()
+        methodret #author!
+    methodend    
+    
+    method public String toString()
+        methodret #name!
+    methodend
+    
+    method public Boolean equals(BBjPlugin bbjPlugin!)
+        if(!bbjPlugin!.getID().equals(#id!)) then
+            methodret Boolean.FALSE
+        endif
+        
+        if(!bbjPlugin!.getName().equals(#name!)) then
+            methodret Boolean.FALSE
+        endif
+        
+        if(!bbjPlugin!.getProjectURL().equals(#projectURL!)) then
+            methodret Boolean.FALSE
+        endif
+        
+        if(!bbjPlugin!.getApiURL().equals(#apiURL!)) then
+            methodret Boolean.FALSE
+        endif
+        
+        if(!bbjPlugin!.getDownloadURL().equals(#downloadURL!)) then
+            methodret Boolean.FALSE
+        endif
+        
+        methodret Boolean.TRUE
+    methodend
+    
+    method public BBjPlugin clone()
+        declare BBjPlugin bbjPlugin!
+        bbjPlugin! = new BBjPlugin()
+        
+        bbjPlugin!.setID(#id!)
+        bbjPlugin!.setName(#name!)
+        bbjPlugin!.setDescription(#description!)
+        bbjPlugin!.setLastChange(#lastChange!)
+        bbjPlugin!.setProjectURL(#projectURL!)
+        bbjPlugin!.setApiURL(#apiURL!)
+        bbjPlugin!.setDownloadURL(#downloadURL!)
+        bbjPlugin!.setVersion(#version!)
+        bbjPlugin!.setAuthor(#author!)
+        
+        methodret bbjPlugin!
+    methodend
+    
+classend

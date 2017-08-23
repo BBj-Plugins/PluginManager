@@ -1,0 +1,434 @@
+use ::src/BBjPlugin.bbj::BBjPlugin
+use ::PluginManager.bbj::PluginManager
+use ::src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+
+use java.util.Iterator
+use java.util.ArrayList
+
+use java.text.SimpleDateFormat
+
+class public PluginManagerUI
+
+    field private PluginManager pluginManager!
+
+    field private BBjSysGui sysGui!
+    field private BBjTopLevelWindow window!
+    field private BBjTabCtrl tabCtrl!
+
+    rem The installed plugin tab's controls
+    field private BBjButton btnRunDemo!
+    field private BBjButton btnUpdatePlugin!
+    field private BBjButton btnUninstallPlugin!
+    field private BBjChildWindow cwdInstalledPlugins!
+    field private BBjStandardGrid grdInstalledPlugins!
+
+    rem The available plugin tab's controls
+    field private BBjButton btnInstallPlugin!
+    field private BBjCheckBox cbxIncludeDevPlugins!
+    field private BBjListButton hiddenListButton!
+    field private BBjProgressBar pbInstallation!
+    field private BBjChildWindow cwdAvailablePlugins!
+    field private BBjStandardGrid grdAvailablePlugins!
+
+    field private BBjInputE inpePluginName!
+    field private BBjInputE inpePluginVersion!
+    field private BBjInputE inpePluginAuthor!
+    field private BBjStaticText txtPluginDescription!
+
+    method public PluginManagerUI()
+        #pluginManager! = new PluginManager()
+        #init()
+    methodend
+    
+    method private void init()
+        #sysGui! = BBjAPI().openSysGui("X0")
+
+        window_width = 800
+        window_height = 600
+        
+        declare java.awt.Rectangle screenBounds!
+        screenBounds! = #sysGui!.getSystemMetrics().getScreenBounds()
+        
+        screen_width = screenBounds!.getWidth()
+        screen_height = screenBounds!.getHeight()
+        #window! = #sysGui!.addWindow(100, (screen_width/2 - window_width/2), (screen_height/2 - window_height/2), window_width, window_height, "Plugin Manager")
+        #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
+        #window!.setCallback(BBjAPI.ON_RESIZE, #this!, "resizeWindow")
+
+        tab_width = window_width-20
+        tab_height = window_height-60
+        window_next_id = #window!.getAvailableControlID()
+        #tabCtrl! = #window!.addTabCtrl(window_next_id, 10, 50, tab_width, tab_height)
+
+        #addFirstTab()
+        #addSecondTab()
+
+        #updateGrids(#cbxIncludeDevPlugins!.isSelected())
+
+        #sysGui!.setRepaintEnabled(0)
+        #resizeWindow(null())
+        #sysGui!.setRepaintEnabled(1)
+    methodend
+
+    method public void resizeWindow(BBjResizeEvent event!)
+        tab_width = #window!.getWidth() - 20
+        tab_height = #window!.getHeight() - 60
+
+        #tabCtrl!.setSize(tab_width, tab_height)
+        #cwdAvailablePlugins!.setSize(tab_width, tab_height)
+        #cwdInstalledPlugins!.setSize(tab_width, tab_height)
+
+        #btnInstallPlugin!.setLocation(#cwdAvailablePlugins!.getWidth()-85, #cwdAvailablePlugins!.getHeight()-35)
+
+        #btnUninstallPlugin!.setLocation(#cwdInstalledPlugins!.getWidth()-85, #cwdInstalledPlugins!.getHeight()-35)
+        #btnUpdatePlugin!.setLocation(#cwdInstalledPlugins!.getWidth()-170, #cwdInstalledPlugins!.getHeight()-35)
+    methodend
+
+    method private void addFirstTab()
+        window_next_id = #window!.getAvailableControlID()
+        #cwdInstalledPlugins! = #window!.addChildWindow(window_next_id, 0, 0, #tabCtrl!.getWidth(), #tabCtrl!.getHeight(), #sysGui!.getAvailableContext())
+
+        cw_width = #cwdInstalledPlugins!.getWidth()
+        cw_height = #cwdInstalledPlugins!.getHeight()
+
+        cw_next_id = #cwdInstalledPlugins!.getAvailableControlID()
+        #btnRunDemo! = cast(BBjButton, #cwdInstalledPlugins!.addButton(cw_next_id, cw_width-85, 10, 75, 25, "Run Demo"))
+        #btnRunDemo!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runDemoButtonPush")
+        #btnRunDemo!.setEnabled(0)
+
+        cw_next_id = #cwdInstalledPlugins!.getAvailableControlID()
+        #grdInstalledPlugins! = #cwdInstalledPlugins!.addGrid(cw_next_id, 10, 40, cw_width-20, 250)
+
+        #grdInstalledPlugins!.setHasColumnHeader(1)
+        #grdInstalledPlugins!.setSelectionMode(#grdInstalledPlugins!.GRID_SELECT_ROW)
+
+        columnHeaderVector! = new BBjVector()
+        columnHeaderVector!.add("Name")
+        columnHeaderVector!.add("Version Tag")
+        columnHeaderVector!.add("Installed Date")
+        columnHeaderVector!.add("Plugin State")
+        #grdInstalledPlugins!.setNumColumns(columnHeaderVector!.size())
+        #grdInstalledPlugins!.setColumnHeaderText(columnHeaderVector!)
+        #grdInstalledPlugins!.setRowHeight(20)
+
+        #grdInstalledPlugins!.setCallback(BBjAPI.ON_GRID_SELECT_ROW, #this!, "installedPluginGridRowSelected")
+
+        cw_next_id = #cwdInstalledPlugins!.getAvailableControlID()
+        #btnUpdatePlugin! = cast(BBjButton, #cwdInstalledPlugins!.addButton(cw_next_id, cw_width, cw_height, 75, 25, "Update"))
+        #btnUpdatePlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "updatePlugin")
+        #btnUpdatePlugin!.setEnabled(0)
+        
+        cw_next_id = #cwdInstalledPlugins!.getAvailableControlID()
+        #btnUninstallPlugin! = cast(BBjButton, #cwdInstalledPlugins!.addButton(cw_next_id, cw_width-85, cw_height-35, 75, 25, "Uninstall"))
+        #btnUninstallPlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "uninstallPlugin")
+        #btnUninstallPlugin!.setEnabled(0)
+        
+        #tabCtrl!.addTab("Installed Plugins", #cwdInstalledPlugins!)
+    methodend
+    
+    method public void runDemoButtonPush(BBjButtonPushEvent event!)
+        #pluginManager!.runDemo(#grdInstalledPlugins!.getCellText(#grdInstalledPlugins!.getSelectedRow(), 0))
+    methodend
+
+    method private void addSecondTab()
+        rem Tab 2 - Available Plugins
+        rem Dropdown on top to select the Plugin Repo URL
+        rem Underneath the Grid with the BBj Plugins available on the site and the status (Already installed, not installed, perform update, etc...)
+        cw_width = #tabCtrl!.getWidth()
+        cw_height = #tabCtrl!.getHeight()
+        window_next_id = #window!.getAvailableControlID()
+        #cwdAvailablePlugins! = #window!.addChildWindow(window_next_id, 0, 0, cw_width, cw_height, #sysGui!.getAvailableContext())
+        
+        cw_next_id = #cwdAvailablePlugins!.getAvailableControlID()
+        #cbxIncludeDevPlugins! = #cwdAvailablePlugins!.addCheckBox(cw_next_id, 10, 10, cw_width-20, 20, "Include development plugins")
+        rem TODO save the value in the user properties
+        #cbxIncludeDevPlugins!.setSelected(0)
+        #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_ON, #this!, "includeDevelopmentPlugins")
+        #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_OFF, #this!, "excludeDevelopmentPlugins")
+        
+        cw_next_id = #cwdAvailablePlugins!.getAvailableControlID()
+        #pbInstallation! = #cwdAvailablePlugins!.addProgressBar(cw_next_id, cw_width-10-150, 10, 150, 20)
+        #pbInstallation!.setVisible(0)
+
+        cw_next_id = #cwdAvailablePlugins!.getAvailableControlID()
+        #grdAvailablePlugins! = #cwdAvailablePlugins!.addGrid(cw_next_id, 10, 40, cw_width-20, 250)
+
+        #grdAvailablePlugins!.setHasColumnHeader(1)
+        #grdAvailablePlugins!.setSelectionMode(#grdAvailablePlugins!.GRID_SELECT_ROW)
+
+        #grdAvailablePlugins!.setCallback(BBjAPI.ON_GRID_SELECT_ROW, #this!, "availablePluginGridRowSelected")
+
+        columnHeaderVector! = new BBjVector()
+        columnHeaderVector!.add("Plugin Name")
+        columnHeaderVector!.add("Version Tag")
+        columnHeaderVector!.add("Plugin Last Update")
+        columnHeaderVector!.add("Plugin State")
+        #grdAvailablePlugins!.setNumColumns(columnHeaderVector!.size())
+        #grdAvailablePlugins!.setColumnHeaderText(columnHeaderVector!)
+        #grdAvailablePlugins!.setRowHeight(20)
+        #grdAvailablePlugins!.setColumnAlignment(0, #grdAvailablePlugins!.GRID_ALIGN_LEFT)
+        #grdAvailablePlugins!.setColumnAlignment(1, #grdAvailablePlugins!.GRID_ALIGN_LEFT)
+        
+        #hiddenListButton! = #cwdAvailablePlugins!.addListButton(#cwdAvailablePlugins!.getAvailableControlID(),-100,-100,0,0, $4000$)
+        #hiddenListButton!.setSize(100, 300)
+        
+        #grdAvailablePlugins!.setCallback(BBjAPI.ON_GRID_EDIT_STOP, #this!, "tagEditStop")
+        
+        cw_next_id =  #cwdAvailablePlugins!.getAvailableControlID()
+        #btnInstallPlugin! = #cwdAvailablePlugins!.addButton(cw_next_id, cw_width-220, cw_height-100, 75, 25, "Install")
+        #btnInstallPlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "installPluginButtonPush")
+        #btnInstallPlugin!.setEnabled(0)
+
+        #tabCtrl!.addTab("Available Plugins", #cwdAvailablePlugins!)
+    methodend
+    
+    method public void tagEditStop(BBjGridEditStopEvent event!)
+        row = event!.getRow()
+        tagName! = event!.getValue()
+        grid! = event!.getControl()
+        
+        availablePlugin! = #pluginManager!.getAvailablePlugin(grid!.getCellText(row, 0))
+        tag! = availablePlugin!.getTag(tagName!)
+        grid!.setCellText(row, 2, #getDisplayDate(tag!.getLastChangeDate()))
+    methodend
+    
+    rem /**
+    rem  * Refreshes the available plugin grid by adding the plugins which are missing tags
+    rem  */
+    method public void includeDevelopmentPlugins(BBjCheckOnEvent event!)
+        #sysGui!.setRepaintEnabled(0)
+        #updateGrids(1)
+        #sysGui!.setRepaintEnabled(1)
+    methodend
+    
+    rem /**
+    rem  * Refreshes the available plugin grid by only displaying the plugins having tags
+    rem  */
+    method public void excludeDevelopmentPlugins(BBjCheckOffEvent event!)
+        #sysGui!.setRepaintEnabled(0)
+        #updateGrids(0)
+        #sysGui!.setRepaintEnabled(1)
+    methodend
+
+    method public void installedPluginGridRowSelected(BBjGridSelectRowEvent event!)
+        declare BBjStandardGrid grid!
+        grid! = cast(BBjStandardGrid, event!.getControl())
+        pluginName! = grid!.getCellText(event!.getRow(), 0)
+        
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = cast(InstalledBBjPlugin, #pluginManager!.getInstalledPlugin(pluginName!))
+
+        rem Enabling / disabling the update button depending on the selected plugin
+        if(installedPlugin!.isUpdateAvailable()) then
+            #btnUpdatePlugin!.setEnabled(1)
+        else
+            #btnUpdatePlugin!.setEnabled(0)
+        endif
+        
+        rem Enabling the Run demo button if the plugin has a demo program
+        if(installedPlugin!.hasDemo()) then
+            #btnRunDemo!.setEnabled(1)
+        else
+            #btnRunDemo!.setEnabled(0)
+        endif
+        
+        rem Enabling the uninstall button
+        #btnUninstallPlugin!.setEnabled(1)
+    methodend
+
+    method public void availablePluginGridRowSelected(BBjGridSelectRowEvent event!)
+        row = event!.getRow()
+        column = event!.getColumn()
+        
+        declare BBjStandardGrid grid!
+        grid! = cast(BBjStandardGrid,event!.getControl())
+        
+        grid!.setEditable(0)
+        grid!.setCellEditable(row, 1, 1)
+        
+        pluginName! = grid!.getCellText(row, 0)
+        
+        declare RemoteBBjPlugin remotePlugin!
+        remotePlugin! = cast(RemoteBBjPlugin, #pluginManager!.getAvailablePlugin(pluginName!))
+        
+        rem Refreshing the tag names in the version tag Combo box
+        tagNames! = new BBjVector(remotePlugin!.getTagNameList(#cbxIncludeDevPlugins!.isSelected()))
+        
+        #hiddenListButton!.removeAllItems()
+        #hiddenListButton!.insertItems(0,tagNames!)
+        #hiddenListButton!.openList()
+        
+        tag$ = grid!.getCellText(row, 1)
+        
+        for i=0 to tagNames!.size() -1
+            if tag$ = tagNames!.get(i) then
+                break
+            endif
+        next i
+        
+        grid!.setCellListControl(row, 1, #hiddenListButton!)
+        grid!.setCellListSelection(row, 1, i, 1)
+        
+        rem Enabling / disabling the install button depending on the selected plugin
+        if(remotePlugin!.isInstalled()) then
+            #btnInstallPlugin!.setEnabled(0)
+        else
+            #btnInstallPlugin!.setEnabled(1)
+        endif
+    methodend
+
+    method public void installPluginButtonPush(BBjButtonPushEvent event!)
+        row = #grdAvailablePlugins!.getSelectedRow()
+        
+        pluginName! = #grdAvailablePlugins!.getCellText(row, 0)
+        tagName! = #grdAvailablePlugins!.getCellText(row, 1)
+        
+        #installPlugin(pluginName!,tagName!)
+    methodend
+    
+    method private void installPlugin(String pluginName!, String tagName!)
+REM         if(#pluginManager!.hasDependencies(pluginName!, tagName!)) then
+REM             
+REM             if(#pluginManager!.hasBBjDependency(pluginName!, tagName!)) then
+REM REM                 if(!#pluginManager!.isBBjVersionValid(pluginName!, tagName!)) then
+REM REM                     rem TODO prompt the user that the plugin can not be installed becuase the BBj version doesn't match
+REM REM                 endif
+REM             endif
+REM 
+REM             if(#pluginManager!.hasDependenciesToBBjPlugins(pluginName!, tagName!)) then
+REM                 if(#pluginManager!.areDependenciesInstalled(pluginName!, tagName!)) then
+REM                     rem install the plugin
+REM                 else
+REM                     a = msgbox("The selected plugin requires other BBj Plugins to be installed. Do you want to install these plugins ?", 4)
+REM                     if(a <> 6) then
+REM                         methodret
+REM                     endif
+REM                     
+REM                     declare HashMap dependencyMap!
+REM                     dependencyMap! = #pluginManager!.getDependencies(pluginName!, tagName!)
+REM                     
+REM                     declare RemoteBBjPlugin remotePlugin!
+REM                     
+REM                     declare Iterator it!
+REM                     it! = dependencyMap!.entrySet().iterator()
+REM                     
+REM                     while(it!.hasNext())
+REM                         entry! = it!.next()
+REM                         
+REM                         
+REM                         rem #installPlugin(remotePlugin!.getName(), )
+REM                     wend
+REM                     
+REM                     rem TODO get the dependencies
+REM                     rem check if the bbj version is valid
+REM                     rem check if the plugin has plugin dependencies (Prompt the user if he wants to install them)
+REM                     rem install
+REM                 endif
+REM             endif
+REM         endif
+        
+        #pbInstallation!.setText("Installing the Plugin")
+        #pbInstallation!.setIndeterminate(1)
+        #pbInstallation!.setVisible(1)
+        
+        #pluginManager!.installBBjPlugin(pluginName!, tagName!)
+        #pbInstallation!.setIndeterminate(0)
+        #pbInstallation!.setValue(100)
+        #pbInstallation!.setText("Plugin Installed")
+        
+        wait 1
+        
+        #pbInstallation!.setVisible(0)
+        #updateGrids(#cbxIncludeDevPlugins!.isSelected())
+    methodend
+    
+    method private void updateGrids(Boolean displayDevelopmentPlugins!)
+        vect! = new BBjVector()
+        
+        declare InstalledBBjPlugin installedPlugin!
+
+        installedPluginList! = #pluginManager!.getInstalledPluginList()
+        #grdInstalledPlugins!.clearMainGrid()
+        #grdInstalledPlugins!.setNumRows(installedPluginList!.size())
+        if(!installedPluginList!.isEmpty()) then
+            for i=0 to installedPluginList!.size()-1
+                installedPlugin! = cast(InstalledBBjPlugin, installedPluginList!.get(i))
+                vect!.add(installedPlugin!.getName())
+                vect!.add(installedPlugin!.getTag().getName())
+                vect!.add(#getDisplayDate(installedPlugin!.getInstallationDate()))
+                if(installedPlugin!.isUpdateAvailable()) then
+                    vect!.add("Update Available")
+                else
+                    vect!.add("Up to date")
+                endif
+            next i
+            #grdInstalledPlugins!.setCellText(0, 0, vect!)
+        endif
+        #grdInstalledPlugins!.deselectAllCells()
+
+        vect! = new BBjVector()
+        availablePluginList! = #pluginManager!.getAvailablePluginList(displayDevelopmentPlugins!)
+        #grdAvailablePlugins!.clearMainGrid()
+        #grdAvailablePlugins!.setNumRows(availablePluginList!.size())
+        if(!availablePluginList!.isEmpty()) then
+            declare RemoteBBjPlugin remotePlugin!
+            for i=0 to availablePluginList!.size()-1
+                remotePlugin! = cast(RemoteBBjPlugin, availablePluginList!.get(i))
+                
+                vect!.add(remotePlugin!.getName())
+                tag! = remotePlugin!.getTagList(displayDevelopmentPlugins!).get(0)
+                
+                vect!.add(tag!.getName())
+                vect!.add(#getDisplayDate(tag!.getLastChangeDate()))
+                if(remotePlugin!.isInstalled()) then
+                    rem TODO display the tag which was installed
+                    vect!.add("Installed")
+                else 
+                    vect!.add("Not Installed")
+                endif
+            next i
+            #grdAvailablePlugins!.setCellText(0, 0, vect!)
+        endif
+        
+        #grdAvailablePlugins!.deselectAllCells()
+    methodend
+    
+    method public String getDisplayDate(java.util.Date date!)
+        declare SimpleDateFormat sdf!
+        
+        sdf! = new SimpleDateFormat("dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
+        rem sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
+        
+        methodret sdf!.format(date!)
+    methodend
+
+    method public void updatePlugin(BBjButtonPushEvent event!)
+        pluginName! = #grdInstalledPlugins!.getCellText(#grdInstalledPlugins!.getSelectedRow(), 0)
+        
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = cast(InstalledBBjPlugin, #pluginManager!.getInstalledPlugin(pluginName!))
+        
+        #pluginManager!.updatePlugin(installedPlugin!)
+        
+        rem TODO update the first grid
+        rem disable the update button
+    methodend
+
+    method public void uninstallPlugin(BBjButtonPushEvent event!)
+        #pluginManager!.uninstallBBjPlugin(#grdInstalledPlugins!.getCellText(#grdInstalledPlugins!.getSelectedRow(), 0))
+        #updateGrids(#cbxIncludeDevPlugins!.isSelected())
+    methodend
+
+    method public void closeWindow(BBjCloseEvent event!)
+        #window!.destroy()
+        bye
+    methodend
+
+classend
+print 'cs'
+
+declare PluginManagerUI pmui!
+pmui! = new PluginManagerUI()
+
+process_events

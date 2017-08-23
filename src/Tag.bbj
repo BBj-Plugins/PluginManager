@@ -1,0 +1,84 @@
+use java.util.HashMap
+
+class public Tag
+
+    field private String name!
+    field private java.util.Date lastChange!
+    
+    field private BBjNumber bbjDependency
+    field private HashMap pluginDependencyMap!
+
+    rem /**
+    rem  * Class constructor. Creates an empty Tag object.
+    rem  */
+    method public Tag()
+    methodend
+    
+    method public void setBBjDependency(BBjNumber dependency)
+        #bbjDependency = dependency
+    methodend
+    
+    method public BBjNumber getBBjDependency()
+        methodret #bbjDependency
+    methodend
+    
+    method public void setPluginDependencyMap(HashMap dependencyMap!)
+        pluginDependencyMap! = dependencyMap!
+    methodend
+    
+    method public HashMap getPluginDependencyMap()
+        methodret #pluginDependencyMap!
+    methodend
+    
+    rem /**
+    rem  * Sets the given Date obejct as the last change date made to the project.
+    rem  * 
+    rem  * @param date! The date to set 
+    rem  */
+    method public void setLastChangeDate(java.util.Date date!)
+        #lastChange! = date!
+    methodend
+    
+    rem /**
+    rem  * Returns the Date object of the last change made to this project.
+    rem  * 
+    rem  * @return the date of the last change
+    rem  */
+    method public java.util.Date getLastChangeDate()
+        methodret #lastChange!
+    methodend
+    
+    rem /**
+    rem  * Sets the tag's name to the given value.
+    rem  * 
+    rem  * @param tagName! The name to set.
+    rem  */
+    method public void setName(String tagName!)
+        #name! = tagName!
+    methodend
+    
+    rem /**
+    rem  * Returns this tag's name.
+    rem  * 
+    rem  * @return the tag name. 
+    rem  */
+    method public String getName()
+        methodret #name!
+    methodend
+    
+    rem /**
+    rem  * Returns a clone of this Tag object.
+    rem  * 
+    rem  * @return the cloned object.
+    rem  */
+    method public Tag clone()
+        declare Tag tag!
+        tag! = new Tag()
+        
+        tag!.setName(#name!)
+        tag!.setLastChangeDate(cast(java.util.Date, #lastChange!.clone()))
+        
+        methodret tag!
+    methodend
+
+classend

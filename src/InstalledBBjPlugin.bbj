@@ -1,0 +1,79 @@
+use ::src/Tag.bbj::Tag
+use ::src/BBjPlugin.bbj::BBjPlugin
+
+use java.io.File
+
+class public InstalledBBjPlugin extends BBjPlugin
+
+    rem the date of the plugin installation 
+    field private java.util.Date installationDate!
+    
+    rem the name of the installed version tag
+    field private Tag tag!
+    
+    rem the date off the last known remote repository change
+    field private java.util.Date lastChanged!
+    
+    rem the flag to determine if an update is available or not 
+    field private boolean updateAvailable!
+
+    rem The boolean value indicating whether this plugin has a Demo program or not
+    field private boolean hasDemo!
+    
+    rem the installation directory of the plugin
+    field private File installationDirectory!
+
+    method public InstalledBBjPlugin()
+        #updateAvailable! = Boolean.FALSE
+        #hasDemo! = Boolean.FALSE
+    methodend
+    
+    method public void setInstallationDirectory(File directory!)
+        #installationDirectory! = directory!
+    methodend
+    
+    method public File getInstallationDirectory()
+        methodret #installationDirectory!
+    methodend
+    
+    method public void setHasDemo(Boolean hasDemo!)
+        #hasDemo! = hasDemo!
+    methodend
+    
+    method public Boolean hasDemo()
+        methodret #hasDemo!
+    methodend
+    
+    method public void setUpdateAvailable(Boolean updateAvailable!)
+        #updateAvailable! = updateAvailable!
+    methodend
+    
+    method public Boolean isUpdateAvailable()
+        methodret #updateAvailable!
+    methodend
+    
+    method public void setLastChangedDate(java.util.Date lastChanged!)
+        #lastChanged! = lastChanged!
+    methodend
+    
+    method public java.util.Date getLastChangedDate()
+        methodret #lastChanged!
+    methodend
+    
+    method public void setInstallationDate(java.util.Date installationDate!)
+        #installationDate! = installationDate!
+    methodend
+    
+    method public java.util.Date getInstallationDate()
+        methodret #installationDate!
+    methodend
+    
+    method public void setTag(Tag tag!)
+        #tag! = tag!
+    methodend
+    
+    method public Tag getTag()
+        methodret #tag!
+    methodend
+    
+classend

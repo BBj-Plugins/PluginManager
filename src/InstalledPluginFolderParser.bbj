@@ -1,0 +1,162 @@
+use java.util.Arrays
+use java.util.Iterator
+use java.util.ArrayList
+
+use java.text.SimpleDateFormat
+
+use java.io.File
+use java.io.FileReader
+use java.io.FileWriter
+
+use com.google.gson.JsonArray
+use com.google.gson.JsonParser
+use com.google.gson.JsonObject
+
+use ::src/Tag.bbj::Tag
+use ::src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+
+class public InstalledPluginFolderParser
+
+    method public static ArrayList getInstalledPlugins(File directory!)
+        declare ArrayList pluginList!
+        pluginList! = new ArrayList()
+        
+        declare BBjVector fileList!
+        fileList! = new BBjVector(Arrays.asList(directory!.listFiles()))
+
+        declare Iterator it!
+        it! = fileList!.iterator()
+
+        declare File currentFile!
+        declare InstalledBBjPlugin installedPlugin!
+
+        while(it!.hasNext())
+            currentFile! = cast(File, it!.next())
+
+            if(currentFile!.isDirectory() AND !currentFile!.getName().equals("PluginManager")) then
+                if(#isBBjPlugin(currentFile!)) then
+                    installedPlugin! = #getInstalledPluginFromDirectory(currentFile!)
+                    if(installedPlugin! <> null()) then
+                        pluginList!.add(installedPlugin!)
+                    endif
+                endif
+            endif
+        wend
+        
+        methodret pluginList!
+    methodend
+    
+    method public static void setHasDemo(InstalledBBjPlugin installedPlugin!)
+        rem Checking if the plugin has a Demo
+        declare File demoFolder!
+        demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "Demo")
+
+        if(demoFolder!.exists()) then
+            declare File demoPgm!
+            demoPgm! = new File(demoFolder!, "Demo.bbj")
+
+            if(demoPgm!.exists()) then
+                installedPlugin!.setHasDemo(Boolean.TRUE)
+            endif
+        endif
+    methodend
+    
+    method private static Boolean isBBjPlugin(File directory!)
+        rem TODO Currently this method only checks if the file are there, this might need some improvements
+        rem like checking if the propertis are well set in the files f.e.
+        declare File pluginJsonFile!
+        pluginJsonFile! = new File(directory!, "bbj-plugin.json")
+
+        if(!pluginJsonFile!.exists()) then
+            methodret Boolean.FALSE
+        endif
+
+        declare File installFile!
+        installFile! = new File( directory!, "install.json")
+
+        if(!installFile!.exists()) then
+            methodret Boolean.FALSE
+        endif
+
+        methodret Boolean.TRUE
+    methodend
+
+    method private static InstalledBBjPlugin getInstalledPluginFromDirectory(File directory!)
+        declare File pluginJsonFile!
+        pluginJsonFile! = new File(directory!, "bbj-plugin.json")
+
+        rem Each BBj plugin must have a bbj-plugin.json file. If not, ignore it
+        if(!pluginJsonFile!.exists()) then
+            methodret null()
+        endif
+
+        declare File installFile!
+        installFile! = new File(directory!, "install.json")
+
+        rem As for the bbj-plugin.json file, the plugin also needs to have a install.json file
+        if(!installFile!.exists()) then
+            methodret null()
+        endif
+
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = new InstalledBBjPlugin()
+
+        installedPlugin!.setInstallationDirectory(directory!)
+
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
+
+        declare FileReader jsonFileReader!
+        jsonFileReader!  = new FileReader(pluginJsonFile!)
+
+        declare JsonObject jsonObject!
+        jsonObject! = jsonParser!.parse(jsonFileReader!).getAsJsonObject()
+
+        installedPlugin!.setName(jsonObject!.get("name").getAsString())
+        installedPlugin!.setDescription(jsonObject!.get("description").getAsString())
+        installedPlugin!.setVersion(jsonObject!.get("version").getAsString())
+        installedPlugin!.setAuthor(jsonObject!.get("author").getAsString())
+
+        jsonFileReader!.close()
+
+        declare SimpleDateFormat sdf!
+        sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
+        sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
+
+        jsonFileReader!  = new FileReader(installFile!)
+        jsonObject! = jsonParser!.parse(jsonFileReader!).getAsJsonObject()
+
+        if(jsonObject!.has("id")) then
+            installedPlugin!.setID(jsonObject!.get("id").getAsInt())
+        endif
+
+        if(jsonObject!.has("installation_date")) then
+            installedPlugin!.setInstallationDate(sdf!.parse(jsonObject!.get("installation_date").getAsString()))
+        endif
+
+        if(jsonObject!.has("tag")) then
+            declare Tag tag!
+            tag! = new Tag()
+
+            declare JsonObject jsonTagObject!
+            jsonTagObject! = jsonObject!.get("tag").getAsJsonObject()
+
+            if(jsonTagObject!.has("tag_name")) then
+                tag!.setName(jsonTagObject!.get("tag_name").getAsString())
+            endif
+
+            if(jsonTagObject!.has("last_change")) then
+                tag!.setLastChangeDate(sdf!.parse(jsonTagObject!.get("last_change").getAsString()))
+            endif
+
+            installedPlugin!.setTag(tag!)
+        endif
+
+        jsonFileReader!.close()
+
+        #setHasDemo(installedPlugin!)
+
+        methodret installedPlugin!
+    methodend
+
+classend
