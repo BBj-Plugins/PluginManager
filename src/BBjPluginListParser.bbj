@@ -13,8 +13,8 @@ use com.google.gson.JsonParser
 
 use java.text.SimpleDateFormat
 
-use ::Tag.bbj::Tag
-use ::RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 
 class public BBjPluginListParser
 

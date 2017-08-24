@@ -12,8 +12,8 @@ use com.google.gson.JsonArray
 use com.google.gson.JsonParser
 use com.google.gson.JsonObject
 
-use ::Tag.bbj::Tag
-use ::InstalledBBjPlugin.bbj::InstalledBBjPlugin
+use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 
 class public InstalledPluginFolderParser
 

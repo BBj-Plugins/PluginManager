@@ -1,6 +1,7 @@
-use ::Tag.bbj::Tag
-use ::RemoteBBjPlugin.bbj::RemoteBBjPlugin
-use ::InstalledBBjPlugin.bbj::InstalledBBjPlugin
+use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+
 use ::PluginManagerLauncher.bbj::PluginManagerLauncher
 
 use java.io.File

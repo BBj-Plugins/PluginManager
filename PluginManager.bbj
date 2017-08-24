@@ -4,13 +4,13 @@ use java.uril.HashMap
 use java.util.Iterator
 use java.util.ArrayList
 
-use ::src/Tag.bbj::Tag
-use ::src/BBjPlugin.bbj::BBjPlugin
-use ::src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
-use ::src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
-use ::src/BBjPluginListParser.bbj::BBjPluginListParser
-use ::src/InstallationService.bbj::InstallationService
-use ::src/InstalledPluginFolderParser.bbj::InstalledPluginFolderParser
+use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+use ::PluginManager/src/BBjPluginListParser.bbj::BBjPluginListParser
+use ::PluginManager/src/InstallationService.bbj::InstallationService
+use ::PluginManager/src/InstalledPluginFolderParser.bbj::InstalledPluginFolderParser
 
 use ::PluginManagerLauncher.bbj::PluginManagerLauncher
 
