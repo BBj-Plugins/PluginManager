@@ -429,6 +429,19 @@ REM         endif
 classend
 print 'cs'
 
+path! = BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj", err=*next)
+
+if(path! = null OR path!.isEmpty()) then
+    declare java.io.File currentDirectory!
+    currentDirectory! = new java.io.File(dsk("") + dir(""))
+    
+    prefix """" + currentDirectory!.getParentFile().getAbsolutePath() + """ " + pfx
+endif
+
+
+
+
+
 
 
 declare PluginManagerUI pmui!
