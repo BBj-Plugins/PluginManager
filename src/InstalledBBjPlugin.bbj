@@ -1,5 +1,5 @@
-use ::src/Tag.bbj::Tag
-use ::src/BBjPlugin.bbj::BBjPlugin
+use ::Tag.bbj::Tag
+use ::BBjPlugin.bbj::BBjPlugin
 
 use java.io.File
 

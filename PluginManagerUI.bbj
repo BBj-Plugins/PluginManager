@@ -1,7 +1,8 @@
-use ::src/BBjPlugin.bbj::BBjPlugin
-use ::PluginManager.bbj::PluginManager
-use ::src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
-use ::src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+use ::PluginManager/PluginManager.bbj::PluginManager
+
+use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 
 use java.util.Iterator
 use java.util.ArrayList
@@ -427,6 +428,8 @@ REM         endif
 
 classend
 print 'cs'
+
+
 
 declare PluginManagerUI pmui!
 pmui! = new PluginManagerUI()

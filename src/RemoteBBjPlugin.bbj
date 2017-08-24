@@ -1,6 +1,5 @@
-use ::src/Tag.bbj::Tag
-use ::src/BBjPlugin.bbj::BBjPlugin
-use ::src/PluginDependency.bbj::PluginDependency
+use ::Tag.bbj::Tag
+use ::BBjPlugin.bbj::BBjPlugin
 
 use java.util.Iterator
 use java.util.ArrayList
