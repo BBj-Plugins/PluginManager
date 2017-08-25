@@ -63,7 +63,7 @@ class public InstalledPluginFolderParser
     
     method private static Boolean isBBjPlugin(File directory!)
         rem TODO Currently this method only checks if the file are there, this might need some improvements
-        rem like checking if the propertis are well set in the files f.e.
+        rem like checking if the properteis are well set in the files f.e.
         declare File pluginJsonFile!
         pluginJsonFile! = new File(directory!, "bbj-plugin.json")
 
@@ -81,6 +81,13 @@ class public InstalledPluginFolderParser
         methodret Boolean.TRUE
     methodend
 
+    rem /**
+    rem  * Parses the given directory and returns a InstalledBBjPlugin object based on the files defined in that directory,
+    rem  * or null if the directory doesn't contain the main file describing a BBj Plugin directory.
+    rem  * 
+    rem  * @param directory! The directory to parse.
+    rem  * @return The InstalledBBjPlugin installed in the given directory. 
+    rem  */
     method private static InstalledBBjPlugin getInstalledPluginFromDirectory(File directory!)
         declare File pluginJsonFile!
         pluginJsonFile! = new File(directory!, "bbj-plugin.json")

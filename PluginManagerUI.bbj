@@ -290,37 +290,38 @@ class public PluginManagerUI
     
     method private void installPlugin(String pluginName!, String tagName!)
 REM         if(#pluginManager!.hasDependencies(pluginName!, tagName!)) then
-REM             
 REM             if(#pluginManager!.hasBBjDependency(pluginName!, tagName!)) then
-REM REM                 if(!#pluginManager!.isBBjVersionValid(pluginName!, tagName!)) then
-REM REM                     rem TODO prompt the user that the plugin can not be installed becuase the BBj version doesn't match
-REM REM                 endif
+REM                 if(!#pluginManager!.isBBjVersionValid(pluginName!, tagName!)) then
+REM                     print "BBj Version is not valid"
+REM                     rem TODO prompt the user that the plugin can not be installed becuase the BBj version doesn't match
+REM                 endif
 REM             endif
 REM 
 REM             if(#pluginManager!.hasDependenciesToBBjPlugins(pluginName!, tagName!)) then
 REM                 if(#pluginManager!.areDependenciesInstalled(pluginName!, tagName!)) then
+REM                     print "dependencies are installed"
 REM                     rem install the plugin
 REM                 else
-REM                     a = msgbox("The selected plugin requires other BBj Plugins to be installed. Do you want to install these plugins ?", 4)
-REM                     if(a <> 6) then
-REM                         methodret
-REM                     endif
-REM                     
-REM                     declare HashMap dependencyMap!
-REM                     dependencyMap! = #pluginManager!.getDependencies(pluginName!, tagName!)
-REM                     
-REM                     declare RemoteBBjPlugin remotePlugin!
-REM                     
-REM                     declare Iterator it!
-REM                     it! = dependencyMap!.entrySet().iterator()
-REM                     
-REM                     while(it!.hasNext())
-REM                         entry! = it!.next()
-REM                         
-REM                         
-REM                         rem #installPlugin(remotePlugin!.getName(), )
-REM                     wend
-REM                     
+REM                     print "dependencies are not installed"
+REM REM                     a = msgbox("The selected plugin requires other BBj Plugins to be installed. Do you want to install these plugins ?", 4)
+REM REM                     if(a <> 6) then
+REM REM                         methodret
+REM REM                     endif
+REM REM                     
+REM REM                     declare HashMap dependencyMap!
+REM REM                     dependencyMap! = #pluginManager!.getDependencies(pluginName!, tagName!)
+REM REM                     
+REM REM                     declare RemoteBBjPlugin remotePlugin!
+REM REM                     
+REM REM                     declare Iterator it!
+REM REM                     it! = dependencyMap!.entrySet().iterator()
+REM REM                     
+REM REM                     while(it!.hasNext())
+REM REM                         entry! = it!.next()
+REM REM                         
+REM REM                         rem #installPlugin(remotePlugin!.getName(), )
+REM REM                     wend
+REM 
 REM                     rem TODO get the dependencies
 REM                     rem check if the bbj version is valid
 REM                     rem check if the plugin has plugin dependencies (Prompt the user if he wants to install them)
@@ -431,18 +432,12 @@ print 'cs'
 
 path! = BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj", err=*next)
 
-if(path! = null OR path!.isEmpty()) then
+if(path! = null() OR path!.isEmpty()) then
     declare java.io.File currentDirectory!
     currentDirectory! = new java.io.File(dsk("") + dir(""))
     
     prefix """" + currentDirectory!.getParentFile().getAbsolutePath() + """ " + pfx
 endif
-
-
-
-
-
-
 
 declare PluginManagerUI pmui!
 pmui! = new PluginManagerUI()

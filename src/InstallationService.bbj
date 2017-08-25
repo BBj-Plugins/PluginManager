@@ -31,22 +31,9 @@ class public InstallationService
     method public InstalledBBjPlugin installBBjPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
         downloadURL! = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
         projectName! = remotePlugin!.getName()
-    
-REM         rem creatign a temp file
-REM         declare File zipFile!
-REM         zipFile! = File.createTempFile(projectName!,".zip")
-REM        
-REM         rem downloading the plugin into the temp file
-REM         #pluginManagerLauncher!.downloadFile(downloadURL!, zipFile!)
-REM         
-REM         declare File pluginDirectory!
-REM         pluginDirectory! = new File(#localPluginDirectory!, projectName!)
-REM         
-REM         rem unzipping the plugin into the bbj/plugins folder
-REM         #pluginManagerLauncher!.unzipArchive(zipFile!, pluginDirectory!)
-REM         
-REM         rem deletes the temp file
-REM         zipFile!.delete()
+        
+        declare File pluginDirectory!
+        pluginDirectory! = new File(#localPluginDirectory!, projectName!)
     
         #pluginManagerLauncher!.installPlugin(remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip", remotePlugin!.getName())
 
@@ -90,7 +77,7 @@ REM         zipFile!.delete()
         
         jsonObject!.add("tag", jsonTagObject!)
         
-        file! = new File(str(#localPluginDirectory!) + File.separator + remotePlugin!.getName() + File.separator + "install.json")
+        file! = new File(installedPlugin!.getInstallationDirectory(), "install.json")
         
         declare FileWriter fileWriter!
         fileWriter! = new FileWriter(file!)
@@ -102,9 +89,8 @@ REM         zipFile!.delete()
         methodret installedPlugin!
     methodend
     
-    method public void uninstallBBjPlugin(InstalledBBjPlugin installedPlugin!)
-        directory! = new File(str(#localPluginDirectory!) + File.separator + installedPlugin!.getName())
-        #deleteDirectory(directory!)
+    method public void uninstallBBjPlugin(InstalledBBjPlugin installedPlugin!) 
+        #deleteDirectory(installedPlugin!.getInstallationDirectory())
     methodend
     
     rem /**

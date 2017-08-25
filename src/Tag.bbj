@@ -12,6 +12,7 @@ class public Tag
     rem  * Class constructor. Creates an empty Tag object.
     rem  */
     method public Tag()
+        #pluginDependencyMap! = new HashMap()
     methodend
     
     method public void setBBjDependency(BBjNumber dependency)
@@ -23,7 +24,7 @@ class public Tag
     methodend
     
     method public void setPluginDependencyMap(HashMap dependencyMap!)
-        pluginDependencyMap! = dependencyMap!
+        #pluginDependencyMap! = dependencyMap!
     methodend
     
     method public HashMap getPluginDependencyMap()
