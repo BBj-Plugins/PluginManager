@@ -8,12 +8,13 @@ use java.io.File
 use java.io.FileWriter
 
 use java.util.Arrays
+use java.util.Iterator
 use java.util.ArrayList
 
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
 
-use java.text.SimpleDateFormat  
+use java.text.SimpleDateFormat
 
 class public InstallationService
 
@@ -24,24 +25,24 @@ class public InstallationService
         #pluginManagerLauncher! = new PluginManagerLauncher()
         #localPluginDirectory! = #pluginManagerLauncher!.getPluginsHome()
     methodend
-    
+
     rem /**
     rem  * Installs the given BBjPlugin into the bbj/plugins folder 
     rem  */
     method public InstalledBBjPlugin installBBjPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
         downloadURL! = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
         projectName! = remotePlugin!.getName()
-        
+
         declare File pluginDirectory!
         pluginDirectory! = new File(#localPluginDirectory!, projectName!)
-    
+
         #pluginManagerLauncher!.installPlugin(remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip", remotePlugin!.getName())
 
         remotePlugin!.setInstalled(Boolean.TRUE)
-        
+
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = new InstalledBBjPlugin()
-        
+
         installedPlugin!.setInstallationDirectory(pluginDirectory!)
         installedPlugin!.setID(remotePlugin!.getID())
         installedPlugin!.setName(remotePlugin!.getName())
@@ -50,49 +51,77 @@ class public InstallationService
         installedPlugin!.setVersion(remotePlugin!.getVersion())
         installedPlugin!.setUpdateAvailable(Boolean.FALSE)
         installedPlugin!.setLastChangedDate(tag!.getLastChangeDate())
-        
+
         installedPlugin!.setTag(tag!.clone())
-        
+
         installationDate! = new java.util.Date()
         installedPlugin!.setInstallationDate(installationDate!)
-        
+
         declare JsonObject jsonObject!
         jsonObject! = new JsonObject()
         jsonObject!.addProperty("id", installedPlugin!.getID().intValue())
-        
+
         declare SimpleDateFormat sdf!
         sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
         sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-             
+
         jsonObject!.addProperty("installation_date", sdf!.format(installedPlugin!.getInstallationDate()))
-        
+
         declare Tag tag!
         tag! = installedPlugin!.getTag()
-        
+
         declare JsonObject jsonTagObject!
         jsonTagObject! = new JsonObject()
-        
+
+        if(tag!.getBBjDependency() <> null()) then
+            jsonTagObject!.addProperty("bbj_dependency", tag!.getBBjDependency())
+        endif
+
         jsonTagObject!.addProperty("tag_name", tag!.getName())
         jsonTagObject!.addProperty("last_change", sdf!.format(tag!.getLastChangeDate()))
-        
+
+        if(!tag!.getPluginDependencyMap().isEmpty()) then
+            declare JsonArray dependencyArray!
+            dependencyArray! = new JsonArray()
+
+            declare JsonObject dependency!
+
+            declare Iterator it!
+            it! = cast(Iterator, tag!.getPluginDependencyMap().entrySet().iterator())
+
+            while(it!.hasNext())
+                entry! = it!.next()
+
+                dependency! = new JsonObject()
+
+                dependency!.addProperty("plugin_name" , cast(RemoteBBjPlugin, entry!.getKey()).getName())
+                dependency!.addProperty("project_url", cast(RemoteBBjPlugin, entry!.getKey()).getProjectURL())
+                dependency!.addProperty("plugin_version", cast(Tag, entry!.getValue()).getName())
+
+                dependencyArray!.add(dependency!)
+            wend
+
+            jsonTagObject!.add("plugin_dependencies", dependencyArray!)
+        endif
+
         jsonObject!.add("tag", jsonTagObject!)
-        
+
         file! = new File(installedPlugin!.getInstallationDirectory(), "install.json")
-        
+
         declare FileWriter fileWriter!
         fileWriter! = new FileWriter(file!)
         fileWriter!.write(jsonObject!.toString())
         fileWriter!.close()
-        
+
         file!.createNewFile()
-        
+
         methodret installedPlugin!
     methodend
-    
-    method public void uninstallBBjPlugin(InstalledBBjPlugin installedPlugin!) 
+
+    method public void uninstallBBjPlugin(InstalledBBjPlugin installedPlugin!)
         #deleteDirectory(installedPlugin!.getInstallationDirectory())
     methodend
-    
+
     rem /**
     rem  * Deletes the given directory and all its files and sub directories recursively.
     rem  * 
@@ -101,20 +130,20 @@ class public InstallationService
     method private void deleteDirectory(File directory!)
         if(directory!.exists()) then
             filesToDelete! = Arrays.asList(directory!.listFiles())
-            
+
             it! = filesToDelete!.iterator()
             while(it!.hasNext())
                 file! = it!.next()
-                
+
                 if(file!.isDirectory()) then
                     #deleteDirectory(file!)
                 endif
-                
+
                 print "deleting: " + file!.toString()
                 file!.delete()
             wend
         endif
-        
+
         directory!.delete()
     methodend
 

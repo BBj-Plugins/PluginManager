@@ -1,6 +1,8 @@
 use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
 
+use java.util.Arrays
+use java.util.TreeMap
 use java.util.Iterator
 use java.util.ArrayList
 
@@ -90,34 +92,63 @@ class public RemoteBBjPlugin extends BBjPlugin
     rem  * 
     rem  * @return A list with all Tag objects of this plugin
     rem  */
-    method public ArrayList getTagList(Boolean includeMaster!)
+    method public ArrayList getTagList(Boolean includeMaster!, Boolean orderByNewestVersion!)
         if(#tagList! = null()) then
             methodret new ArrayList()
         endif
         
-        if(includeMaster!) then
+        if(includeMaster! AND !orderByNewestVersion!) then
             methodret #tagList!
         endif
     
-        declare Iterator it!
-        it! = #tagList!.iterator()
-        
         declare Tag tag!
+        declare Iterator it!
         declare ArrayList tagList!
         
-        tagList! = new ArrayList() 
-        
-        while(it!.hasNext())
-            tag! = cast(Tag, it!.next())
-
-            if(!tag!.getName().equals("master")) then
-                  tagList!.add(tag!)
+        if(!includeMaster!) then
+            tagList! = new ArrayList()
+            
+            it! = #tagList!.iterator()
+            while(it!.hasNext())
+                tag! = cast(Tag, it!.next())
+    
+                if(!tag!.isMaster()) then
+                      tagList!.add(tag!)
+                endif
+            wend
+        else
+            tagList! = cast(ArrayList, #tagList!.clone())
+        endif
+ 
+        if(orderByNewestVersion!) then
+            declare Tag masterTag!
+            declare TreeMap treeMap!
+            treeMap! = new TreeMap()
+            
+            it! = tagList!.iterator()
+            while(it!.hasNext())
+                tag! = cast(Tag, it!.next())
+                
+                if(tag!.isMaster()) then
+                    masterTag! = cast(Tag, tag!)
+                    continue
+                endif
+                
+                treeMap!.put(num(tag!.getName()), tag!)
+            wend
+            
+            list! = new ArrayList(Arrays.asList(treeMap!.values().toArray()))
+            java.util.Collections.reverse(list!)
+            tagList! = cast(ArrayList, list!)
+            
+            if(includeMaster! AND masterTag! <> null()) then
+                tagList!.add(0, masterTag!)
             endif
-        wend
+        endif
         
         methodret tagList!
     methodend
-    
+
     rem /**
     rem  * Returns a list of all tag object names. The boolean parameter is used to specify 
     rem  * whether to include the master tag name into the list or not.
@@ -128,13 +159,13 @@ class public RemoteBBjPlugin extends BBjPlugin
     rem  * @return A list with all tag names for this plugin.
     rem  * 
     rem  */
-    method public ArrayList getTagNameList(Boolean includeMaster!)
+    method public ArrayList getTagNameList(Boolean includeMaster!, Boolean orderByNewestVersion!)
         if(#tagList! = null()) then
             methodret new ArrayList()
         endif
     
         declare Iterator it!
-        it! = #getTagList(includeMaster!).iterator()
+        it! = #getTagList(includeMaster!, orderByNewestVersion!).iterator()
         
         declare Tag tag!
         declare ArrayList tagNameList!

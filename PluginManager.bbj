@@ -30,11 +30,11 @@ class public PluginManager
         #installationService! = new InstallationService()
 
         #installedPlugins! = InstalledPluginFolderParser.getInstalledPlugins(#pluginsHome!)
-        
+
         declare File bbjPluginListFile!
         bbjPluginListFile! = new File(str(#pluginsHome!) + File.separator + "PluginManager" + File.separator + "bbj-plugin-list.json")
         #remotePlugins! = BBjPluginListParser.parse(bbjPluginListFile!)
-        
+
         rem mark plugins as installed or not installed depending on the remote plugin list
         #initialisePluginState()
     methodend
@@ -56,7 +56,7 @@ class public PluginManager
         it! = #installedPlugins!.iterator()
         while(it!.hasNext())
             installedPlugin! = cast(InstalledBBjPlugin, it!.next())
-            remotePlugin! = cast(RemoteBBjPlugin, #getAvailablePlugin(installedPlugin!.getName()))
+            remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(installedPlugin!.getName()))
 
             if(remotePlugin! = null()) then
                 continue
@@ -70,10 +70,34 @@ class public PluginManager
                 continue
             endif
 
-            if(tag!.getLastChangeDate().after(installedPlugin!.getInstallationDate())) then
-                installedPlugin!.setUpdateAvailable(Boolean.TRUE)
-            endif
+            #setUpdateAvailableFlag(installedPlugin!, tag!, remotePlugin!)
         wend
+    methodend
+    
+    rem /**
+    rem  * Checks if the given InstalledBBPlugin's version(=Tag) can be updated or not.
+    rem  * 
+    rem  * If the given Tag is the master tag, the timestamp of the last change and the timestamp of the installation will be compared.
+    rem  * For all other tags, the tag name will be compared.
+    rem  */
+    method public void setUpdateAvailableFlag(InstalledBBjPlugin installedPlugin!, Tag tag!, RemoteBBjPlugin remotePlugin!)
+         if(tag!.isMaster()) then
+                if(tag!.getLastChangeDate().after(installedPlugin!.getInstallationDate())) then
+                    installedPlugin!.setUpdateAvailable(Boolean.TRUE)
+                endif
+            else
+                version = num(tag!.getName())
+                tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.FALSE)
+                
+                for i=0 to tagList!.size()-1
+                    if(!tagList!.get(i).getName().equals(tag!.getName()))then
+                        if(num(tagList!.get(i).getName()) > version) then
+                            installedPlugin!.setUpdateAvailable(Boolean.TRUE)
+                            break
+                        endif
+                    endif
+                next i
+            endif
     methodend
 
     method public BBjPlugin getInstalledPlugin(String pluginName!)
@@ -85,7 +109,7 @@ class public PluginManager
     rem  * 
     rem  * @return A list with the available plugin objects
     rem  */
-    method public BBjPlugin getAvailablePlugin(String pluginName!)
+    method public BBjPlugin getRemotePlugin(String pluginName!)
         methodret #getBBjPluginFromList(pluginName!, #remotePlugins!)
     methodend
 
@@ -120,22 +144,24 @@ class public PluginManager
     method public void installBBjPlugin(String pluginName!, String tagName!)
         rem get the plugin object from the plugin name 
         declare RemoteBBjPlugin remotePlugin!
-        remotePlugin! = cast(RemoteBBjPlugin, #getAvailablePlugin(pluginName!))
+        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(pluginName!))
 
         if(remotePlugin! = null()) then
             throw "Unknown BBj Plugin for the given name: " + pluginName!,  255
         endif
-        
+
         if(!remotePlugin!.hasTag(tagName!)) then
             throw "Unknown Plugin tag: " + tagName!,  255
         endif
-        
+
         tag! = remotePlugin!.getTag(tagName!)
-        
+
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = #installationService!.installBBjPlugin(remotePlugin!, tag!)
         InstalledPluginFolderParser.setHasDemo(installedPlugin!)
         #installedPlugins!.add(installedPlugin!)
+       
+        #setUpdateAvailableFlag(installedPlugin!, installedPlugin!.getTag(), remotePlugin!)
     methodend
 
     rem /**
@@ -155,7 +181,7 @@ class public PluginManager
 
         rem set the install flag of the remote plugin to false
         declare RemoteBBjPlugin remotePlugin!
-        remotePlugin! = cast(RemoteBBjPlugin, #getAvailablePlugin(pluginName!))
+        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(pluginName!))
         remotePlugin!.setInstalled(Boolean.FALSE)
 
         #installedPlugins!.remove(installedPlugin!)
@@ -186,7 +212,7 @@ class public PluginManager
         methodret #installedPlugins!
     methodend
 
-    method public ArrayList getAvailablePluginList(Boolean includeDevelopmentPlugins!)
+    method public ArrayList getRemotePluginList(Boolean includeDevelopmentPlugins!)
         if(includeDevelopmentPlugins!) then
             methodret #remotePlugins!
         endif
@@ -212,7 +238,7 @@ class public PluginManager
 
     method public void updatePlugin(InstalledBBjPlugin plugin!)
         declare RemoteBBjPlugin remotePlugin!
-        remotePlugin! = cast(RemoteBBjPlugin, #getAvailablePlugin(plugin!.getName()))
+        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(plugin!.getName()))
 
         if(remotePlugin! = null()) then
             throw "Missing BBj Plugin project", 260
@@ -226,19 +252,46 @@ class public PluginManager
             throw "Unknown Version Tag", 260
             methodret
         endif
-
+        
+        if(!tag!.isMaster()) then
+            latestVersionTagName! = tag!.getName()
+            
+            declare Tag currentTag!
+            
+            declare ArrayList tagList!
+            tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.TRUE)
+            
+            declare Iterator it!
+            it! = tagList!.iterator()
+            
+            while(it!.hasNext())
+                currentTag! = cast(Tag, it!.next())
+                
+                if(num(currentTag!.getName()) > num(tag!.getName())) then
+                    latestVersionTagName! = currentTag!.getName()
+                    break
+                endif
+            wend
+            
+            tag! = cast(Tag, remotePlugin!.getTag(latestVersionTagName!))
+        endif
+        
         rem TODO Make sure not to delete any files that the user created 
         #installationService!.uninstallBBjPlugin(plugin!)
-        #installationService!.installBBjPlugin(remotePlugin!,tag!)
-
-        InstalledPluginFolderParser.setHasDemo(plugin!)
+        #installedPlugins!.remove(plugin!)
+        
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = #installationService!.installBBjPlugin(remotePlugin!, tag!)
+        InstalledPluginFolderParser.setHasDemo(installedPlugin!)
 
         plugin!.setInstallationDate(new java.util.Date())
         plugin!.setLastChangedDate(tag!.getLastChangeDate())
+        
+        #installedPlugins!.add(installedPlugin!)
     methodend
 
     rem /**
-    rem  * 
+    rem  * Executes the Demo.bbj file in the given plugin's Demo folder.
     rem  */
     method public void runDemo(String pluginName!)
         declare InstalledBBjPlugin installedPlugin!
@@ -252,26 +305,27 @@ class public PluginManager
         print "launching: " + command!
         a = scall(command!)
     methodend
-    
-    method public Boolean hasDependencies(String pluginName!, String tagName!)
-        if(#hasBBjDependency(pluginName!, tagName!) OR #hasDependenciesToBBjPlugins(pluginName!, tagName!)) then
+
+    method public Boolean hasDependencies(Tag tag!)
+        if(#hasBBjDependency(tag!) OR #hasDependenciesToBBjPlugins(tag!)) then
             methodret Boolean.TRUE
         endif
+
+        methodret Boolean.FALSE
+    methodend
+
+    method public Boolean hasBBjDependency(Tag tag!)
+        if(tag! = null()) then
+            throw "null object: tag!", 255
+        endif
+
+        if(tag!.getBBjDependency() <> null() AND !tag!.getBBjDependency().isEmpty()) then
+            methodret Boolean.TRUE
+        endif   
         
         methodret Boolean.FALSE
     methodend
-    
-    method public Boolean hasBBjDependency(String pluginName!, String tagName!)
-        declare Tag tag!
-        tag! = #getRemotePluginTag(pluginName!, tagName!)
-        
-        if(tag! = null()) then
-            throw "Missing tag: " + tagName! + " for the plugin " + pluginName! , 255
-        endif
-        
-        methodret tag!.getBBjDependency() <> 0
-    methodend
-    
+
     rem /**
     rem  * Returns true if the plugin with the given name and the given tag name 
     rem  * has dependencies to other plugins, false otherwise.
@@ -281,101 +335,105 @@ class public PluginManager
     rem  * 
     rem  * @return true if the plugin has dependencies to BBj Plugins, false otherwise.
     rem  */
-    method public Boolean hasDependenciesToBBjPlugins(String pluginName!, String tagName!)
-        declare Tag tag!
-        tag! = #getRemotePluginTag(pluginName!, tagName!)
-        
+    method public Boolean hasDependenciesToBBjPlugins(Tag tag!)
         if(tag! = null()) then
-            throw "Missing tag: " + tagName! + " for the plugin " + pluginName! , 255
+            throw "null object: tag!" , 255
         endif
-        
+
         methodret !tag!.getPluginDependencyMap().isEmpty()
     methodend
-    
-    method private Tag getRemotePluginTag(String pluginName!, String tagName!)
+
+    method public Tag getRemotePluginTag(String pluginName!, String tagName!)
         declare RemoteBBjPlugin remotePlugin!
-        remotePlugin! = cast(RemoteBBjPlugin, #getAvailablePlugin(pluginName!))
-        
+        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(pluginName!))
+
         if(remotePlugin! = null()) then
             throw "Unknown plugin: " + pluginName!, 255
         endif
-        
+
         if(!remotePlugin!.hasTag(tagName!)) then
             throw "Unknown Tag: " + tagName!, 255
         endif
-        
+
         methodret remotePlugin!.getTag(tagName!)
     methodend
-    
-    method public Boolean areDependenciesInstalled(String pluginName!, String tagName!) 
-        declare Tag tag!
-        tag! = #getRemotePluginTag(pluginName!, tagName!)
-        
+
+    method public Boolean areDependenciesInstalled(Tag tag!)
         if(tag! = null()) then
-            throw "Missing tag: " + tagName! + " for the plugin " + pluginName! , 255
+            throw "null object: tag!", 255
         endif
-        
+
         declare HashMap dependencyMap!
         dependencyMap! = tag!.getPluginDependencyMap()
-        
+
         declare Tag dependencyTag!
         declare RemoteBBjPlugin remotePlugin!
-        
+
         declare Iterator it!
         it! = dependencyMap!.entrySet().iterator()
         while(it!.hasNext())
             entry! = it!.next()
-            
+
             remotePlugin! = cast(RemoteBBjPlugin, entry!.getKey())
             dependencyTag! = cast(Tag, entry!.getValue())
-            
+
             if(!#isRemotePluginInstalled(remotePlugin!, dependencyTag!)) then
                 methodret Boolean.FALSE
-            endif         
+            endif
         wend
-        
+
         methodret Boolean.TRUE
     methodend
-    
-    rem /**
-    rem  * Returns a HashMap with the dependencies of the plugin with the given name, and tag.
-    rem  *
-    rem  * @param pluginName! The plugin's name.
-    rem  * @param tagName! The name of the Tag.
-    rem  * 
-    rem  * @return HashMap with the dependent plugin objects as key and the specific tag as value. 
-    rem  */
-    method public HashMap getDependencies(String pluginName!, String tagName!)
-        declare Tag tag!
-        tag! = #getRemotePluginTag(pluginName!, tagName!)
-        
-        if(tag! = null()) then
-            throw "Missing tag: " + tagName! + " for the plugin " + pluginName! , 255
-        endif
-        
-        methodret tag!.getPluginDependencyMap()
-    methodend
-    
+
     rem /**
     rem  * Returns true if the installed BBj Version is newer than the specified min version
     rem  */
-    method public Boolean isBBjVersionValid(String pluginName!, String tagName!)
-        if(!#hasBBjDependency(pluginName!, tagName!)) then
-            methodret Boolean.TRUE
-        endif
-        
-        declare Tag tag!
-        tag! = #getRemotePluginTag(pluginName!, tagName!)
-        
+    method public Boolean isBBjVersionValid(Tag tag!)
         if(tag! = null()) then
-            throw "Missing tag: " + tagName! + " for the plugin " + pluginName! , 255
+            throw "null object: tag!" , 255
         endif
         
-        if("REV " + tag!.getBBjDependency() > REV) then
+        if(!#hasBBjDependency(tag!)) then
             methodret Boolean.TRUE
         endif
-          
+
+        if("REV " + str(tag!.getBBjDependency()) <= REV) then
+            methodret Boolean.TRUE
+        endif
+
         methodret Boolean.FALSE
     methodend
     
+    method public Boolean isDependency(InstalledBBjPlugin bbjPlugin!)
+        methodret !#getDependentPlugins(bbjPlugin!).isEmpty()
+    methodend
+    
+    method public ArrayList getDependentPlugins(InstalledBBjPlugin bbjPlugin!)
+        if(bbjPlugin! = null()) then
+            throw "null object: bbjPlugin!",255
+        endif
+        
+        declare ArrayList dependentPlugins!
+        declare InstalledBBjPlugin installedPlugin!
+        
+        dependentPlugins! = new ArrayList()
+        
+        declare Iterator it!
+        it! = #installedPlugins!.iterator()
+        
+        while(it!.hasNext())
+            installedPlugin! = cast(InstalledBBjPlugin,it!.next())
+            
+            if(installedPlugin!.getID() = bbjPlugin!.getID()) then
+                continue
+            endif
+            
+            if(installedPlugin!.getTag().getPluginDependencyMap().containsKey(bbjPlugin!)) then
+                dependentPlugins!.add(installedPlugin!)
+            endif
+        wend
+        
+        methodret dependentPlugins!
+    methodend
+
 classend

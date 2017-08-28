@@ -1,4 +1,5 @@
 use java.util.Arrays
+use java.util.HashMap
 use java.util.Iterator
 use java.util.ArrayList
 
@@ -17,6 +18,8 @@ use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 
 class public InstalledPluginFolderParser
 
+    field private static HashMap dependencyMap!
+
     method public static ArrayList getInstalledPlugins(File directory!)
         declare ArrayList pluginList!
         pluginList! = new ArrayList()
@@ -29,6 +32,8 @@ class public InstalledPluginFolderParser
 
         declare File currentFile!
         declare InstalledBBjPlugin installedPlugin!
+        
+        #dependencyMap! = new HashMap()
 
         while(it!.hasNext())
             currentFile! = cast(File, it!.next())
@@ -43,7 +48,43 @@ class public InstalledPluginFolderParser
             endif
         wend
         
+REM         if(!#dependencyMap!.isEmpty()) then
+REM             #addPluginDependencies(pluginList!)
+REM         endif
+        
         methodret pluginList!
+    methodend
+    
+    method private static void addPluginDependencies(ArrayList pluginList!)
+        if(#dependencyMap!.isEmpty()) then
+            methodret
+        endif
+        
+        declare JsonArray jsonArray!
+        declare JsonObject jsonObject!
+        declare Iterator jsonArrayIterator!
+        declare Iterator dependencyIterator!
+        
+        dependencyIterator! = #dependencyMap!.entrySet().iterator()
+        while(dependencyIterator!.hasNext())
+            entry! = dependencyIterator!.next()
+            
+            installedPlugin! = cast(InstalledBBjPlugin, entry!.getKey())
+            jsonArray! = cast(JsonArray, entry!.getValue())
+            
+            jsonArrayIterator! = jsonArray!.iterator()
+            while(jsonArrayIterator!.hasNext())
+                jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
+                
+                if(jsonObject!.has("plugin_name")) then
+                    
+                endif
+                
+                if(jsonObject!.has("plugin_version")) then
+                
+                endif
+            wend
+        wend
     methodend
     
     method public static void setHasDemo(InstalledBBjPlugin installedPlugin!)
@@ -147,6 +188,10 @@ class public InstalledPluginFolderParser
 
             declare JsonObject jsonTagObject!
             jsonTagObject! = jsonObject!.get("tag").getAsJsonObject()
+            
+            if(jsonTagObject!.has("bbj_dependency")) then
+                tag!.setBBjDependency(jsonTagObject!.get("bbj_dependency").getAsString())
+            endif
 
             if(jsonTagObject!.has("tag_name")) then
                 tag!.setName(jsonTagObject!.get("tag_name").getAsString())
@@ -155,6 +200,13 @@ class public InstalledPluginFolderParser
             if(jsonTagObject!.has("last_change")) then
                 tag!.setLastChangeDate(sdf!.parse(jsonTagObject!.get("last_change").getAsString()))
             endif
+            
+REM             if(jsonTagObject!.has("plugin_dependencies")) then
+REM                 declare JsonArray dependencyArray!
+REM                 dependencyArray! = jsonTagObject!.get("plugin_dependencies").getAsJsonArray()
+REM                 
+REM                 #dependencyMap!.put(installedPlugin!, dependencyArray!)
+REM             endif
 
             installedPlugin!.setTag(tag!)
         endif

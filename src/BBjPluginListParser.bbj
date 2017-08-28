@@ -90,8 +90,8 @@ class public BBjPluginListParser
                             tag!.setLastChangeDate(sdf!.parse(lastChange!))
                         endif
                         
-                        if(tagJsonObject!.has("bbj_pependency")) then
-                            tag!.setBBjDependency(tagJsonObject!.get("bbj_dependency").getAsNumber().doubleValue())
+                        if(tagJsonObject!.has("bbj_dependency")) then
+                            tag!.setBBjDependency(tagJsonObject!.get("bbj_dependency").getAsString())
                         endif
                         
                         if(tagJsonObject!.has("plugin_dependencies") AND tagJsonObject!.get("plugin_dependencies").isJsonArray()) then
