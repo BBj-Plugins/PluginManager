@@ -299,14 +299,11 @@ class public PluginManagerUI
             print "Error unknown Tag"
             methodret
         endif
-            
+
         if(#pluginManager!.hasDependencies(tag!)) then
             if(#pluginManager!.hasBBjDependency(tag!)) then
                 if(!#pluginManager!.isBBjVersionValid(tag!)) then
-                    a = msgbox("The installed BBj Version doesn't match the plugin's requirement."+ $0A$ +
-:                              "The installed version is "+ str(REV) + $0A$ +
-:                              "The plugin requires REV " + tag!.getBBjDependency() + " to run properly." + $0A$ +
-:                              "Do want to install the plugin anyway ?", 4)
+                    a = msgbox("The installed BBj Version doesn't match the plugin's requirement."+ $0A$ +                              "The installed version is "+ str(REV) + $0A$ +                              "The plugin requires REV " + tag!.getBBjDependency() + " to run properly." + $0A$ +                              "Do want to install the plugin anyway ?", 4)
 
                     if(a <> 6) then
                         methodret
@@ -317,13 +314,13 @@ class public PluginManagerUI
             if(#pluginManager!.hasDependenciesToBBjPlugins(tag!)) then
                 if(!#pluginManager!.areDependenciesInstalled(tag!)) then
                     rem TODO check if a dependency is installed but requires an update 
-                    
+
                     declare StringBuilder sb!
                     sb! = new StringBuilder("The selected plugin requires the following plugins to be installed in order to run properly: " + $0A$ + $0A$)
-                    
+
                     declare HashMap dependencyMap!
                     dependencyMap! = tag!.getPluginDependencyMap()
-                    
+
                     declare Iterator it!
                     it! = dependencyMap!.entrySet().iterator()
 
@@ -332,26 +329,28 @@ class public PluginManagerUI
 
                         sb!.append("Plugin: " + cast(RemoteBBjPlugin, entry!.getKey()).getName() + ",Tag: " + cast(Tag, entry!.getValue()).getName() + $0A$)
                     wend
-                    
-                    sb!.append($0A$ + "Do you want to install these plugins ?")
+
+                    sb!.append($0A$ + "Do you want to install these plugins as well?")
                     a = msgbox(sb!.toString(),4)
-                    
-                    if(a <> 6) then
+
+                    if(a <> 6 AND a <> 7) then
                         methodret
                     endif
 
-                    declare Tag dependencyTag!
-                    declare RemoteBBjPlugin remotePlugin!
-
-                    it! = dependencyMap!.entrySet().iterator()
-                    while(it!.hasNext())
-                        entry! = it!.next()
-
-                        dependencyTag! = cast(Tag, entry!.getValue())
-                        remotePlugin! = cast(RemoteBBjPlugin, entry!.getKey())
-
-                        #installPlugin(remotePlugin!.getName(), dependencyTag!.getName())
-                    wend
+                    if(a = 6) then
+                        declare Tag dependencyTag!
+                        declare RemoteBBjPlugin remotePlugin!
+    
+                        it! = dependencyMap!.entrySet().iterator()
+                        while(it!.hasNext())
+                            entry! = it!.next()
+    
+                            dependencyTag! = cast(Tag, entry!.getValue())
+                            remotePlugin! = cast(RemoteBBjPlugin, entry!.getKey())
+    
+                            #installPlugin(remotePlugin!.getName(), dependencyTag!.getName())
+                        wend
+                     endif
                 endif
             endif
         endif
@@ -438,18 +437,39 @@ class public PluginManagerUI
         installedPlugin! = cast(InstalledBBjPlugin, #pluginManager!.getInstalledPlugin(pluginName!))
 
         #pluginManager!.updatePlugin(installedPlugin!)
-        
+
         #updateGrids(#cbxIncludeDevPlugins!.isSelected())
     methodend
 
     method public void uninstallPlugin(BBjButtonPushEvent event!)
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #pluginManager!.getInstalledPlugin(#grdInstalledPlugins!.getCellText(#grdInstalledPlugins!.getSelectedRow(), 0)))
-        
+
         if(#pluginManager!.isDependency(installedPlugin!)) then
-            print #pluginManager!.getDependentPlugins(installedPlugin!)
+            declare Iterator it!
+            declare ArrayList list!
+            declare StringBuilder sb!
+            declare InstalledBBjPlugin plugin!
+
+            sb! = new StringBuilder("The selected plugin is a dependency of the following plugins: " + $0A$ + $0A$)
+            list! = #pluginManager!.getDependentPlugins(installedPlugin!)
+            it! = list!.iterator()
+
+            while(it!.hasNext())
+                plugin! = cast(InstalledBBjPlugin, it!.next())
+
+                sb!.append(plugin!.getName() + $0A$)
+            wend
+
+            sb!.append($0A$ + "Uninstalling it may break the plugins listed above. Do you want to uninstall it anyway ?")
+
+            a = msgbox(sb!.toString(), 4)
+
+            if(a <> 6) then
+                methodret
+            endif
         endif
-        
+
         #pluginManager!.uninstallBBjPlugin(#grdInstalledPlugins!.getCellText(#grdInstalledPlugins!.getSelectedRow(), 0))
         #updateGrids(#cbxIncludeDevPlugins!.isSelected())
     methodend

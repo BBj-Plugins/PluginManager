@@ -48,11 +48,11 @@ class public InstalledPluginFolderParser
             endif
         wend
         
-REM         if(!#dependencyMap!.isEmpty()) then
-REM             #addPluginDependencies(pluginList!)
-REM         endif
-        
         methodret pluginList!
+    methodend
+    
+    method public static HashMap getDependencyMap()
+        methodret #dependencyMap!
     methodend
     
     method private static void addPluginDependencies(ArrayList pluginList!)
@@ -201,12 +201,12 @@ REM         endif
                 tag!.setLastChangeDate(sdf!.parse(jsonTagObject!.get("last_change").getAsString()))
             endif
             
-REM             if(jsonTagObject!.has("plugin_dependencies")) then
-REM                 declare JsonArray dependencyArray!
-REM                 dependencyArray! = jsonTagObject!.get("plugin_dependencies").getAsJsonArray()
-REM                 
-REM                 #dependencyMap!.put(installedPlugin!, dependencyArray!)
-REM             endif
+            if(jsonTagObject!.has("plugin_dependencies")) then
+                declare JsonArray dependencyArray!
+                dependencyArray! = jsonTagObject!.get("plugin_dependencies").getAsJsonArray()
+                
+                #dependencyMap!.put(installedPlugin!, dependencyArray!)
+            endif
 
             installedPlugin!.setTag(tag!)
         endif

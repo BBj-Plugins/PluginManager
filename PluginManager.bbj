@@ -4,6 +4,9 @@ use java.util.HashMap
 use java.util.Iterator
 use java.util.ArrayList
 
+use com.google.gson.JsonArray
+use com.google.gson.JsonObject
+
 use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
@@ -28,22 +31,72 @@ class public PluginManager
         #pluginsHome! = #pluginManagerLauncher!.getPluginsHome()
 
         #installationService! = new InstallationService()
-
         #installedPlugins! = InstalledPluginFolderParser.getInstalledPlugins(#pluginsHome!)
 
         declare File bbjPluginListFile!
         bbjPluginListFile! = new File(str(#pluginsHome!) + File.separator + "PluginManager" + File.separator + "bbj-plugin-list.json")
         #remotePlugins! = BBjPluginListParser.parse(bbjPluginListFile!)
 
+        rem adding the dependencies to the installed plugins
+        #addDependencies(InstalledPluginFolderParser.getDependencyMap())
+        
         rem mark plugins as installed or not installed depending on the remote plugin list
         #initialisePluginState()
+    methodend
+    
+    method private void addDependencies(HashMap dependencyMap!)
+        if(dependencyMap! = null() OR dependencyMap!.isEmpty()) then
+            methodret
+        endif
+        
+        if(#installedPlugins! = null() OR #installedPlugins!.isEmpty()) then
+            methodret
+        endif
+        
+        declare Tag tag!
+        declare Iterator it!
+        declare HashMap dMap!
+        declare JsonArray jsonArray!
+        declare JsonObject jsonObject!
+        declare Iterator jsonArrayIterator!
+        declare RemoteBBjPlugin remotePlugin!
+        declare InstalledBBjPlugin installedPlugin!
+        
+        it! = #installedPlugins!.iterator()
+        
+        while(it!.hasNext())
+            installedPlugin! = cast(InstalledBBjPlugin, it!.next())
+            
+            if(dependencyMap!.containsKey(installedPlugin!)) then
+                jsonArray! = cast(JsonArray, dependencyMap!.get(installedPlugin!))
+                
+                if(jsonArray! = null() OR jsonArray!.size() = 0) then
+                    continue
+                endif
+                
+                dMap! = new HashMap()
+                jsonArrayIterator! = jsonArray!.iterator()
+                while(jsonArrayIterator!.hasNext())
+                    jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
+                    
+                    remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(jsonObject!.get("plugin_name").getAsString()))
+                    tag! = remotePlugin!.getTag(jsonObject!.get("plugin_version").getAsString())
+                    
+                    dMap!.put(remotePlugin!, tag!)
+                wend
+                
+                if(!dMap!.isEmpty()) then
+                    installedPlugin!.getTag().setPluginDependencyMap(dMap!)
+                endif
+            endif
+        wend
     methodend
 
     rem /**
     rem  * Parses the installed and remote plugin lists and sets the isInstalled flag for the remote plugins,
     rem  * the updateAvailable flag for the installed plugins.
     rem  */
-    method public void initialisePluginState()
+    method private void initialisePluginState()
         if(#installedPlugins! = null() OR #installedPlugins!.isEmpty()) then
             methodret
         endif
@@ -81,23 +134,23 @@ class public PluginManager
     rem  * For all other tags, the tag name will be compared.
     rem  */
     method public void setUpdateAvailableFlag(InstalledBBjPlugin installedPlugin!, Tag tag!, RemoteBBjPlugin remotePlugin!)
-         if(tag!.isMaster()) then
-                if(tag!.getLastChangeDate().after(installedPlugin!.getInstallationDate())) then
-                    installedPlugin!.setUpdateAvailable(Boolean.TRUE)
-                endif
-            else
-                version = num(tag!.getName())
-                tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.FALSE)
-                
-                for i=0 to tagList!.size()-1
-                    if(!tagList!.get(i).getName().equals(tag!.getName()))then
-                        if(num(tagList!.get(i).getName()) > version) then
-                            installedPlugin!.setUpdateAvailable(Boolean.TRUE)
-                            break
-                        endif
-                    endif
-                next i
+        if(tag!.isMaster()) then
+            if(tag!.getLastChangeDate().after(installedPlugin!.getInstallationDate())) then
+                installedPlugin!.setUpdateAvailable(Boolean.TRUE)
             endif
+        else
+            version = num(tag!.getName())
+            tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.FALSE)
+    
+            for i=0 to tagList!.size()-1
+                if(!tagList!.get(i).getName().equals(tag!.getName()))then
+                    if(num(tagList!.get(i).getName()) > version) then
+                        installedPlugin!.setUpdateAvailable(Boolean.TRUE)
+                        break
+                    endif
+                endif
+            next i
+        endif
     methodend
 
     method public BBjPlugin getInstalledPlugin(String pluginName!)
@@ -314,6 +367,11 @@ class public PluginManager
         methodret Boolean.FALSE
     methodend
 
+    rem /**
+    rem  * Returns true if the given Tag object has a dependency to a specific BBj Revision, false otherwise.
+    rem  * 
+    rem  * @return true if the plugin has a dependency to a BBj revision, false otherwise. 
+    rem  */
     method public Boolean hasBBjDependency(Tag tag!)
         if(tag! = null()) then
             throw "null object: tag!", 255
@@ -414,9 +472,12 @@ class public PluginManager
         endif
         
         declare ArrayList dependentPlugins!
+        declare RemoteBBjPlugin remotePlugin!
         declare InstalledBBjPlugin installedPlugin!
         
         dependentPlugins! = new ArrayList()
+        
+        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(bbjPlugin!.getName()))
         
         declare Iterator it!
         it! = #installedPlugins!.iterator()
@@ -428,7 +489,7 @@ class public PluginManager
                 continue
             endif
             
-            if(installedPlugin!.getTag().getPluginDependencyMap().containsKey(bbjPlugin!)) then
+            if(installedPlugin!.getTag().getPluginDependencyMap().containsKey(remotePlugin!)) then
                 dependentPlugins!.add(installedPlugin!)
             endif
         wend
