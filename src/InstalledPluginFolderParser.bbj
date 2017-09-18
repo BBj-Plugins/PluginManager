@@ -1,3 +1,4 @@
+use java.util.List
 use java.util.Arrays
 use java.util.HashMap
 use java.util.Iterator
@@ -14,16 +15,23 @@ use com.google.gson.JsonParser
 use com.google.gson.JsonObject
 
 use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/PluginManager.bbj::PluginManager
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 
 class public InstalledPluginFolderParser
 
+    field private static PluginManager pluginManager!
     field private static HashMap dependencyMap!
+    
+    method public InstalledPluginFolderParser(PluginManager pluginManager!)
+        #pluginManager! = pluginManager!
+    methodend
 
-    method public static ArrayList getInstalledPlugins(File directory!)
+    method public ArrayList getInstalledPlugins(File directory!)
         declare ArrayList pluginList!
         pluginList! = new ArrayList()
-        
+
         declare BBjVector fileList!
         fileList! = new BBjVector(Arrays.asList(directory!.listFiles()))
 
@@ -32,7 +40,7 @@ class public InstalledPluginFolderParser
 
         declare File currentFile!
         declare InstalledBBjPlugin installedPlugin!
-        
+
         #dependencyMap! = new HashMap()
 
         while(it!.hasNext())
@@ -47,62 +55,74 @@ class public InstalledPluginFolderParser
                 endif
             endif
         wend
-        
+
         methodret pluginList!
     methodend
-    
-    method public static HashMap getDependencyMap()
-        methodret #dependencyMap!
-    methodend
-    
-    method private static void addPluginDependencies(ArrayList pluginList!)
+
+    method private void addPluginDependencies(ArrayList pluginList!)
         if(#dependencyMap!.isEmpty()) then
             methodret
         endif
-        
+
         declare JsonArray jsonArray!
         declare JsonObject jsonObject!
         declare Iterator jsonArrayIterator!
         declare Iterator dependencyIterator!
-        
+
         dependencyIterator! = #dependencyMap!.entrySet().iterator()
         while(dependencyIterator!.hasNext())
             entry! = dependencyIterator!.next()
-            
+
             installedPlugin! = cast(InstalledBBjPlugin, entry!.getKey())
             jsonArray! = cast(JsonArray, entry!.getValue())
-            
+
             jsonArrayIterator! = jsonArray!.iterator()
             while(jsonArrayIterator!.hasNext())
                 jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
-                
+
                 if(jsonObject!.has("plugin_name")) then
-                    
+
                 endif
-                
+
                 if(jsonObject!.has("plugin_version")) then
-                
+
                 endif
             wend
         wend
     methodend
-    
-    method public static void setHasDemo(InstalledBBjPlugin installedPlugin!)
+
+    method public void setHasDemo(InstalledBBjPlugin installedPlugin!)
         rem Checking if the plugin has a Demo
         declare File demoFolder!
         demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "Demo")
 
         if(demoFolder!.exists()) then
-            declare File demoPgm!
-            demoPgm! = new File(demoFolder!, "Demo.bbj")
+            declare File currentFile!
+            declare ArrayList demoFileNameList!
+            demoFileNameList! = new ArrayList()
 
-            if(demoPgm!.exists()) then
+            declare java.util.List fileList!
+            fileList! = cast(java.util.List, Arrays.asList(demoFolder!.listFiles()))
+
+            declare Iterator it!
+            it! = fileList!.iterator()
+
+            while(it!.hasNext())
+                currentFile! = cast(File, it!.next())
+
+                if(currentFile!.isFile() AND currentFile!.getName().endsWith(".bbj")) then
+                    demoFileNameList!.add(currentFile!.getName())
+                endif
+            wend
+
+            if(!demoFileNameList!.isEmpty()) then
                 installedPlugin!.setHasDemo(Boolean.TRUE)
+                installedPlugin!.setDemoProgramNames(demoFileNameList!)
             endif
         endif
     methodend
-    
-    method private static Boolean isBBjPlugin(File directory!)
+
+    method private Boolean isBBjPlugin(File directory!)
         rem TODO Currently this method only checks if the file are there, this might need some improvements
         rem like checking if the properteis are well set in the files f.e.
         declare File pluginJsonFile!
@@ -129,7 +149,7 @@ class public InstalledPluginFolderParser
     rem  * @param directory! The directory to parse.
     rem  * @return The InstalledBBjPlugin installed in the given directory. 
     rem  */
-    method private static InstalledBBjPlugin getInstalledPluginFromDirectory(File directory!)
+    method private InstalledBBjPlugin getInstalledPluginFromDirectory(File directory!)
         declare File pluginJsonFile!
         pluginJsonFile! = new File(directory!, "bbj-plugin.json")
 
@@ -188,7 +208,7 @@ class public InstalledPluginFolderParser
 
             declare JsonObject jsonTagObject!
             jsonTagObject! = jsonObject!.get("tag").getAsJsonObject()
-            
+
             if(jsonTagObject!.has("bbj_dependency")) then
                 tag!.setBBjDependency(jsonTagObject!.get("bbj_dependency").getAsString())
             endif
@@ -200,11 +220,11 @@ class public InstalledPluginFolderParser
             if(jsonTagObject!.has("last_change")) then
                 tag!.setLastChangeDate(sdf!.parse(jsonTagObject!.get("last_change").getAsString()))
             endif
-            
+
             if(jsonTagObject!.has("plugin_dependencies")) then
                 declare JsonArray dependencyArray!
                 dependencyArray! = jsonTagObject!.get("plugin_dependencies").getAsJsonArray()
-                
+
                 #dependencyMap!.put(installedPlugin!, dependencyArray!)
             endif
 
@@ -217,5 +237,54 @@ class public InstalledPluginFolderParser
 
         methodret installedPlugin!
     methodend
+    
+    method public void addDependencies(ArrayList installedPluginList!)
+        if(#dependencyMap! = null() OR #dependencyMap!.isEmpty()) then
+            methodret
+        endif
 
+        if(installedPluginList! = null() OR installedPluginList!.isEmpty()) then
+            methodret
+        endif
+
+        declare Tag tag!
+        declare Iterator it!
+        declare HashMap dMap!
+        declare JsonArray jsonArray!
+        declare JsonObject jsonObject!
+        declare Iterator jsonArrayIterator!
+        declare RemoteBBjPlugin remotePlugin!
+        declare InstalledBBjPlugin installedPlugin!
+
+        it! = installedPluginList!.iterator()
+
+        while(it!.hasNext())
+            installedPlugin! = cast(InstalledBBjPlugin, it!.next())
+
+            if(#dependencyMap!.containsKey(installedPlugin!)) then
+                jsonArray! = cast(JsonArray, #dependencyMap!.get(installedPlugin!))
+
+                if(jsonArray! = null() OR jsonArray!.size() = 0) then
+                    continue
+                endif
+
+                dMap! = new HashMap()
+                jsonArrayIterator! = jsonArray!.iterator()
+                while(jsonArrayIterator!.hasNext())
+                    jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
+
+                    remotePlugin! = cast(RemoteBBjPlugin, #pluginManager!.getRemotePlugin(jsonObject!.get("plugin_name").getAsString()))
+                    
+                    tag! = remotePlugin!.getTag(jsonObject!.get("plugin_version").getAsString())
+
+                    dMap!.put(remotePlugin!, tag!)
+                wend
+
+                if(!dMap!.isEmpty()) then
+                    installedPlugin!.getTag().setPluginDependencyMap(dMap!)
+                endif
+            endif
+        wend
+    methodend
+    
 classend

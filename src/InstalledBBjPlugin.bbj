@@ -3,6 +3,8 @@ use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
 
 use java.io.File
 
+use java.util.ArrayList
+
 class public InstalledBBjPlugin extends BBjPlugin
 
     rem the date of the plugin installation 
@@ -22,10 +24,20 @@ class public InstalledBBjPlugin extends BBjPlugin
     
     rem the installation directory of the plugin
     field private File installationDirectory!
+    
+    field private ArrayList demoProgramNameList!
 
     method public InstalledBBjPlugin()
         #updateAvailable! = Boolean.FALSE
         #hasDemo! = Boolean.FALSE
+    methodend
+    
+    method public void setDemoProgramNames(ArrayList programNames!)
+        #demoProgramNameList! = programNames!
+    methodend
+    
+    method public ArrayList getDemoProgramNames()
+        methodret #demoProgramNameList!
     methodend
     
     method public void setInstallationDirectory(File directory!)

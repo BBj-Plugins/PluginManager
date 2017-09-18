@@ -1,0 +1,160 @@
+use com.google.gson.JsonArray
+use com.google.gson.JsonParser
+use com.google.gson.JsonObject
+use com.google.gson.JsonElement
+
+use java.util.Iterator
+
+use ::PluginManager/src/GithubApiService.bbj::GithubApiService
+
+class public BBjPluginJsonGenerator
+
+    field private String downloadURL!
+    field private GithubApiService githubApiService!
+
+    method public BBjPluginJsonGenerator()
+        #githubApiService! = new GithubApiService()
+    methodend
+
+    method public JsonObject getProjectJsonObject(String json!)
+        methodret #getProjectJsonObject(json!, null(), null())
+    methodend
+
+    method public JsonObject getProjectJsonObject(String json!, String username!, String password!)
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
+
+        declare JsonObject jsonObject!
+        jsonObject! = jsonParser!.parse(json!).getAsJsonObject()
+
+        declare JsonObject finalJsonObject!
+        finalJsonObject! = new JsonObject()
+
+        rem the plugin's name
+        pluginName! = jsonObject!.get("name").getAsString()
+
+        finalJsonObject!.addProperty("id", jsonObject!.get("id").getAsInt())
+        finalJsonObject!.addProperty("name", pluginName!)
+
+        rem Adding the description --> adding an empty description in case it hasn't been set
+        if(jsonObject!.has("description") AND !jsonObject!.get("description").isJsonNull()) then
+            finalJsonObject!.addProperty("description", jsonObject!.get("description").getAsString())
+        else
+            finalJsonObject!.addProperty("description", "")
+        endif
+
+        finalJsonObject!.addProperty("project_url", jsonObject!.get("html_url").getAsString())
+        finalJsonObject!.addProperty("api_url", jsonObject!.get("url").getAsString())
+
+        #downloadURL! = #githubApiService!.getDownloadURLPrefix() + jsonObject!.get("full_name").getAsString()
+
+        rem TODO set the download URL
+        finalJsonObject!.addProperty("download_url", #downloadURL!)
+        finalJsonObject!.addProperty("author", "")
+
+        declare JsonArray tagJsonArray!
+        tagJsonArray! = new JsonArray()
+
+        declare JsonObject tagJsonObject!
+        tagJsonObject! = new JsonObject()
+
+        rem Each Plugin has at least a master tag
+        tagJsonObject!.addProperty("tag_name", "master")
+        tagJsonObject!.addProperty("last_change", jsonObject!.get("pushed_at").getAsString())
+
+        rem Adding the dependencies for the master tag if there are any
+        #addDependencies(tagJsonObject!, #downloadURL! + "/master/bbj-plugin.json", username!, password!)
+
+        rem adding the master tag to the tag array
+        tagJsonArray!.add(tagJsonObject!)
+
+        rem reformatting the url because it contains invalid characters --> {/sha}
+        refsURL! = jsonObject!.get("git_refs_url").getAsString()
+        refsURL! = refsURL!.replaceAll("\{\/sha\}", "\/")
+
+        rem adding the tags and their depencies to the currentJsonObject
+        #addTags(refsURL!, tagJsonArray!, pluginName!, username!, password!)
+        finalJsonObject!.add("tags", tagJsonArray!)
+
+        methodret finalJsonObject!
+    methodend
+
+    method private void addTags(String refsURL!, JsonArray tagArray!, String pluginName!, String username!, String password!)
+        rem getting the JSON with the plugin's refs
+        projectRefJson! = #githubApiService!.getJson(refsURL!, username!, password!)
+
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
+
+        declare JsonArray refJsonArray!
+        refJsonArray! = jsonParser!.parse(projectRefJson!).getAsJsonArray()
+
+        declare JsonObject currentRef!
+        declare JsonObject refObject!
+
+        declare Iterator refIterator!
+        refIterator! = refJsonArray!.iterator()
+
+        while(refIterator!.hasNext())
+            currentRef! = cast(JsonObject, refIterator!.next())
+
+            if(currentRef!.has("object") AND currentRef!.get("object").isJsonObject()) then
+                refObject! = cast(JsonObject, currentRef!.get("object").getAsJsonObject())
+
+                if(refObject!.has("type") AND refObject!.has("url")) then
+                    if(refObject!.get("type").getAsString().equals("tag")) then
+                        url$ = refObject!.get("url").getAsString()
+                        tagArray!.add(#getJsonTagObject(url$, pluginName!, username!, password!))
+                    endif
+                endif
+            endif
+        wend
+    methodend
+
+    method private JsonObject getJsonTagObject(String url!, String pluginName!, String username!, String password!)
+        rem retrieving the json string
+        jsonString! = #githubApiService!.getJson(url!, username!, password!)
+
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
+
+        declare JsonObject jsonObject!
+        jsonObject! = jsonParser!.parse(jsonString!).getAsJsonObject()
+
+        declare JsonObject tag!
+        tag! = new JsonObject()
+
+        tagName! = jsonObject!.get("tag").getAsString()
+
+        tag!.addProperty("tag_name", tagName!)
+
+        declare JsonObject tagger!
+        tagger! = jsonObject!.get("tagger").getAsJsonObject()
+
+        tag!.addProperty("last_change", tagger!.get("date").getAsString())
+
+        rem adds the bbj dependency and the bbj plugins dependencies by parsing the bbj-plugin.json file for this tag
+        #addDependencies(tag!, #downloadURL! + "/" + tagName! + "/bbj-plugin.json", username!, password!)
+
+        methodret tag!
+    methodend
+
+    method private void addDependencies(JsonObject tagJsonObject!, String fileURL!, String username!, String password!)
+        declare JsonParser jsonParser!
+        declare JsonObject jsonObject!
+
+        jsonParser! = new JsonParser()
+
+        jsonString! = #githubApiService!.getJson(fileURL!, username!, password!)
+        jsonObject! = cast(JsonObject, jsonParser!.parse(jsonString!).getAsJsonObject())
+
+        if(jsonObject!.has("bbj_dependency") AND !jsonObject!.get("bbj_dependency").isJsonNull()) then
+            tagJsonObject!.addProperty("bbj_dependency" , jsonObject!.get("bbj_dependency").getAsString())
+        endif
+
+        if(jsonObject!.has("plugin_dependencies") AND jsonObject!.get("plugin_dependencies").isJsonArray()) then
+            tagJsonObject!.add("plugin_dependencies", jsonObject!.get("plugin_dependencies").getAsJsonArray())
+        endif
+    methodend
+
+classend

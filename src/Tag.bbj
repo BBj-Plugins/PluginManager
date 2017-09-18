@@ -12,6 +12,7 @@ class public Tag
     rem  * Class constructor. Creates an empty Tag object.
     rem  */
     method public Tag()
+        #bbjDependency! = ""
         #pluginDependencyMap! = new HashMap()
         #isMaster! = Boolean.FALSE
     methodend

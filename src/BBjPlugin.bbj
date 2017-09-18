@@ -78,21 +78,5 @@ class public BBjPlugin
         methodret Boolean.TRUE
     methodend
     
-    method public BBjPlugin clone()
-        declare BBjPlugin bbjPlugin!
-        bbjPlugin! = new BBjPlugin()
-        
-        bbjPlugin!.setID(#id!)
-        bbjPlugin!.setName(#name!)
-        bbjPlugin!.setDescription(#description!)
-        bbjPlugin!.setLastChange(#lastChange!)
-        bbjPlugin!.setProjectURL(#projectURL!)
-        bbjPlugin!.setApiURL(#apiURL!)
-        bbjPlugin!.setDownloadURL(#downloadURL!)
-        bbjPlugin!.setVersion(#version!)
-        bbjPlugin!.setAuthor(#author!)
-        
-        methodret bbjPlugin!
-    methodend
     
 classend

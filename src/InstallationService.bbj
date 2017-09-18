@@ -16,6 +16,36 @@ use com.google.gson.JsonObject
 
 use java.text.SimpleDateFormat
 
+use java.util.List
+use java.lang.StringBuilder
+
+use java.util.zip.ZipInputStream
+use java.util.zip.ZipEntry
+
+use java.net.URL
+use java.net.URLConnection
+use java.net.HttpURLConnection
+
+use java.lang.Boolean
+
+use java.io.InputStream
+use java.io.OutputStream
+use java.io.BufferedReader
+use java.io.FileInputStream
+use java.io.FileOutputStream
+use java.io.InputStreamReader
+use java.io.BufferedInputStream
+use java.io.BufferedOutputStream
+use java.io.ByteArrayInputStream
+use java.io.ByteArrayOutputStream
+
+use com.google.gson.JsonParser
+use com.google.gson.JsonElement
+use com.google.gson.JsonFactory
+use com.google.gson.stream.JsonReader
+
+use ::PluginManager/src/GithubApiService.bbj::GithubApiService
+
 class public InstallationService
 
     field private PluginManagerLauncher pluginManagerLauncher!
@@ -25,19 +55,32 @@ class public InstallationService
         #pluginManagerLauncher! = new PluginManagerLauncher()
         #localPluginDirectory! = #pluginManagerLauncher!.getPluginsHome()
     methodend
-
-    rem /**
-    rem  * Installs the given BBjPlugin into the bbj/plugins folder 
-    rem  */
-    method public InstalledBBjPlugin installBBjPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
+    
+    method public InstalledBBjPlugin installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
+        methodret #installPlugin(remotePlugin!, tag!, null(), null())
+    methodend
+    
+    method public InstalledBBjPlugin installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!, String username!, String password!)
         downloadURL! = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
         projectName! = remotePlugin!.getName()
-
+        
         declare File pluginDirectory!
         pluginDirectory! = new File(#localPluginDirectory!, projectName!)
 
-        #pluginManagerLauncher!.installPlugin(remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip", remotePlugin!.getName())
+        url$ = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
 
+        if(username! <> null() AND password! <> null()) then
+            declare GithubApiService service!
+            service! = new GithubApiService()
+            authToken! = service!.getAuthToken(username!, password!)
+            
+            declare URLConnection connection!
+            connection! = service!.getConnection(new URL(url$) , authToken!)
+            #pluginManagerLauncher!.installPlugin(connection!, remotePlugin!.getName())
+        else
+            #pluginManagerLauncher!.installPlugin(url$, remotePlugin!.getName())
+        endif
+        
         remotePlugin!.setInstalled(Boolean.TRUE)
 
         declare InstalledBBjPlugin installedPlugin!

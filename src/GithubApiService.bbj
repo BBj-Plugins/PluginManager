@@ -1,0 +1,159 @@
+use java.net.URL
+
+use java.util.Base64
+
+use java.io.IOException
+use java.io.InputStream
+use java.io.BufferedReader
+use java.io.InputStreamReader
+
+use java.lang.StringBuilder
+
+use java.net.HttpURLConnection
+
+class public GithubApiService
+
+    method public GithubApiService()
+    methodend
+
+    method public String getDownloadURLPrefix()
+        methodret "https://raw.githubusercontent.com/"
+    methodend
+
+    rem /**
+    rem  * Returns true if the given username and password are valid. 
+    rem  * The method calls the https://api.github.com/rate_limit
+    rem  */
+    method public Boolean areGithubCredentialsValid(String username!, String password!)
+        authToken! = #getAuthToken(username!, password!)
+
+        declare URL url!
+        url! = new URL("https://api.github.com/rate_limit")
+
+        declare HttpURLConnection connection!
+        connection! = #getConnection(url!, authToken!)
+
+        response = connection!.getResponseCode()
+        connection!.disconnect()
+
+        if(response = 200) then
+            methodret Boolean.TRUE
+        endif
+
+        methodret Boolean.FALSE
+    methodend
+
+    method public String getAuthToken(String username!, String password!)
+        if(username! <> null() AND password! <> null()) then
+            methodret new String(Base64.getEncoder().encode(username! + ":" + password!))
+        endif
+        methodret null()
+    methodend
+
+    method private String getGithubApiURL(String repoURL!)
+        if(!repoURL!.startsWith("https://github.com/")) then
+            throw "Invalid Github Repository URL", 255
+        endif
+
+        repoURL! = repoURL!.replace("https://github.com/", "https://api.github.com/repos/")
+
+        methodret repoURL!
+    methodend
+
+    method public HttpURLConnection getConnection(URL url!, String authToken!)
+        declare HttpURLConnection connection!
+        connection! = cast(HttpURLConnection,url!.openConnection())
+        connection!.setRequestMethod("GET")
+        connection!.setRequestProperty("Accept", "appliation/json")
+        connection!.setRequestProperty("Accept","v3")
+
+        if(authToken! <> null()) then
+            connection!.setRequestProperty("Authorization", "Basic " + authToken!)
+        endif
+
+        methodret connection!
+    methodend
+
+    method public Boolean isRepositoryAccessible(String repoURL!)
+        methodret #isRepositoryAccessible(repoURL!, null(), null())
+    methodend
+
+    method public Boolean isRepositoryAccessible(String repoURL!, String username!, String password!)
+        authToken! = #getAuthToken(username!,password!)
+
+        declare URL url!
+        url! = new URL(#getGithubApiURL(repoURL!))
+
+        declare HttpURLConnection connection!
+        connection! = #getConnection(url!, authToken!)
+
+        response = connection!.getResponseCode()
+        connection!.disconnect()
+
+        if(response = 200) then
+            methodret Boolean.TRUE
+        endif
+
+        methodret Boolean.FALSE
+    methodend
+
+    method public String getProjectJson(String repoUrl!, String username!, String password!)
+        authToken! = #getAuthToken(username!,password!)
+
+        declare URL url!
+        url! = new URL(#getGithubApiURL(repoUrl!))
+
+        declare HttpURLConnection connection!
+        connection! = #getConnection(url!, authToken!)
+
+        response = connection!.getResponseCode()
+        if(response <> 200) then
+            throw "An error occured while retriving the repository's JSON", 255
+        endif
+
+        json! = #getJsonFromStream(connection!.getInputStream())
+        connection!.disconnect()
+
+        methodret json!
+    methodend
+
+    method public String getJson(String repoURL!)
+        methodret #getJson(repoURL!, null(), null())
+    methodend
+
+    method public String getJson(String repoURL!, String username!, String password!)
+        authToken! = #getAuthToken(username!,password!)
+
+        declare URL url!
+        url! = new URL(repoURL!)
+
+        declare HttpURLConnection connection!
+        connection! = #getConnection(url!, authToken!)
+
+        response = connection!.getResponseCode()
+        if(response <> 200) then
+            throw "An error occured while retriving the repository's JSON", 255
+        endif
+
+        json! = #getJsonFromStream(connection!.getInputStream())
+        connection!.disconnect()
+
+        methodret json!
+    methodend
+
+    method private String getJsonFromStream(InputStream stream!)
+        declare StringBuilder builder!
+        builder! = new StringBuilder()
+
+        br! = new BufferedReader(new InputStreamReader(stream!))
+
+        line! = br!.readLine()
+        while(line! <> null())
+            builder!.append(line!)
+            line! = br!.readLine()
+        wend
+
+        methodret builder!.toString()
+    methodend
+
+classend

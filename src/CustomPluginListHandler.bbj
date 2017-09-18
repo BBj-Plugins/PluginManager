@@ -1,0 +1,75 @@
+use java.io.File
+use java.io.FileReader
+
+use java.util.Iterator
+
+use com.google.gson.JsonArray
+use com.google.gson.JsonObject
+use com.google.gson.JsonParser
+
+rem /**
+rem  * - Has a JSONArray in memory to quickly add and remove entries from it
+rem  * - Manages the content of the custom-plugin-list.json file
+rem  * - Used to add / remove entries from that file
+rem  * - Used to read the content of that file
+rem  */
+class public CustomPluginListHandler
+
+    field private File pluginListFile!
+    
+    field private JsonArray customPluginArray!
+
+    method public CustomPluginListHandler(File customPluginListFile!)
+        #pluginListFile! = customPluginListFile!
+        
+        if(#pluginListFile!.exists()) then
+            declare JsonParser jsonParser!
+            jsonParser! = new JsonParser()
+
+            #customPluginArray! = jsonParser!.parse(new FileReader(#pluginListFile!)).getAsJsonArray()
+        else
+            #customPluginArray! = new JsonArray()
+        endif
+    methodend
+    
+    method public void addCustomPlugin(JsonObject jsonObject!)
+        if(#containsCustomPlugin(jsonObject!)) then
+            rem TODO throw an exception ?
+            methodret
+        endif
+
+        #customPluginArray!.add(jsonObject!)
+        
+        ch = unt 
+        open(ch, mode="o_create,o_trunc") #pluginListFile!.getAbsolutePath()
+        write(ch) #customPluginArray!.toString()
+        close(ch)
+    methodend
+    
+    method public Boolean containsCustomPlugin(JsonObject jsonObject!)
+        if(#customPluginArray!.size() = 0) then
+            methodret Boolean.FALSE
+        endif
+        
+        if(!jsonObject!.has("id")) then
+            throw "Invalid JSON Object, ""id"" property is missing", 255
+        endif
+        
+        objectID! = jsonObject!.get("id").getAsString()
+        
+        declare Iterator it!
+        it! = #customPluginArray!.iterator()
+        
+        declare JsonObject currentObject!
+        while(it!.hasNext())
+            currentObject! = cast(JsonObject, it!.next())
+            
+            if(currentObject!.has("id") AND currentObject!.get("id").getAsString() = objectID!) then
+                methodret Boolean.TRUE
+            endif
+        wend
+        
+        methodret Boolean.FALSE
+    methodend
+
+classend

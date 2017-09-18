@@ -1,0 +1,183 @@
+use ::PluginManager/PluginManager.bbj::PluginManager
+use ::PluginManager/PluginManagerUI.bbj::PluginManagerUI
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/GithubCredentialWindow.bbj::GithubCredentialWindow
+
+use java.lang.StringBuilder
+
+use java.util.ArrayList
+
+class public ConfigurePluginProjectURLsWindow
+
+    field private BBjSysGui sysGui!
+    field private PluginManager pluginManager!
+    field private PluginManagerUI pluginManagerUI!
+
+    field private BBjTopLevelWindow window!
+    field private BBjInputE inpeProjectURL!
+    field private BBjButton btnAddProjectURL!
+
+    field private BBjStandardGrid grid!
+
+    field private GithubCredentialWindow credentialWindow!
+
+    method public ConfigurePluginProjectURLsWindow(PluginManager pluginManager!, PluginManagerUI pluginManagerUI!)
+        #pluginManager! = pluginManager!
+        #pluginManagerUI! = pluginManagerUI!
+        
+        #credentialWindow! = new GithubCredentialWindow()
+    methodend
+
+    method private void init(BBjSysGui sysGui!)
+        #sysGui! = sysGui!
+
+        window_width = 800
+        window_height = 600
+
+        declare java.awt.Rectangle screenBounds!
+        screenBounds! = sysGui!.getSystemMetrics().getScreenBounds()
+
+        screen_width = screenBounds!.getWidth()
+        screen_height = screenBounds!.getHeight()
+
+        #window! = sysGui!.addWindow(200, (screen_width/2 - window_width/2), (screen_height/2 - window_height/2), window_width, window_height, "Configure Plugin Project URLs", $00000012$)
+        #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
+
+        window_width  = #window!.getWidth()
+        window_height = #window!.getHeight()
+
+        window_next_id = #window!.getAvailableControlID()
+        #window!.addStaticText(window_next_id, 10, 20, 175, 25, "Custom BBj Plugin Project URL: ", $8000$)
+
+        window_next_id = #window!.getAvailableControlID()
+        #inpeProjectURL! = #window!.addInputE(window_next_id, 195, 13, 350, 25, "")
+        #inpeProjectURL!.setInsertMode(0)
+        #inpeProjectURL!.setText("https://github.com/BasisHub/BBjGridExWidget")
+
+        window_next_id = #window!.getAvailableControlID()
+        #btnAddProjectURL! = #window!.addButton(window_next_id, 555, 13, 85, 25, "Add")
+        #btnAddProjectURL!.setCallback(BBjButton.ON_BUTTON_PUSH, #this!, "addProjectURLButtonPush")
+
+        window_next_id = #window!.getAvailableControlID()
+        #grid! = #window!.addGrid(window_next_id, 10, 50, window_width-20 , 300)
+        #grid!.setHasColumnHeader(1)
+        #grid!.setFitToGrid(BBjSysGui.AUTO_RESIZE_LAST_COLUMN)
+        #grid!.setSelectionMode(#grid!.GRID_SELECT_ROW)
+
+        columnHeaderVector! = new BBjVector()
+        columnHeaderVector!.add("Plugin Name")
+        columnHeaderVector!.add("Available Tags")
+        columnHeaderVector!.add("Last Update")
+        columnHeaderVector!.add("Project URL")
+
+        #grid!.setNumColumns(columnHeaderVector!.size())
+        #grid!.setColumnHeaderText(columnHeaderVector!)
+        #grid!.setRowHeight(20)
+        
+    methodend
+
+    method public void addProjectURLButtonPush(BBjButtonPushEvent event!)
+        url! = #inpeProjectURL!.getText()
+
+        rem first check if the Github credentials are set
+        if(!#pluginManager!.areGithubCredentialsSaved()) then
+
+            useCredentials! = Boolean.FALSE
+            rem if not, first check if the repo is public, if not prompt for the user credentials
+            if(!#pluginManager!.isPluginProjectAccessible(url!, Boolean.FALSE)) then
+                sb! = new StringBuilder("The provided project repository URL cannot be accessed(404).")
+                sb!.append("This indicates either that the URL is wrong or the repository is private.")
+                sb!.append($0A$)
+                sb!.append("If the repository is private, you'll need to provide valid Github credentials to access it.")
+                sb!.append("Do you want to add Github credentials ?")
+
+                answer = msgbox(sb!.toString(), 4)
+
+                if(answer <> 6) then
+                    methodret
+                endif
+
+                invalidCredentials! = Boolean.TRUE
+                while(invalidCredentials!)
+                    #credentialWindow!.open(#sysGui!)
+
+                    if(#credentialWindow!.dialogCanceled()) then
+                        methodret
+                    endif
+
+                    #pluginManager!.setGihubCredentials(#credentialWindow!.getUsername(), #credentialWindow!.getPassword(), #credentialWindow!.saveCredentials())
+                    if(#pluginManager!.areGithubCredentialsValid()) then
+                        invalidCredentials! = Boolean.FALSE
+                        break
+                    endif
+
+                    a = msgbox("The entered Github Login Credentials are not valid.")
+                wend
+
+                if(!#pluginManager!.isPluginProjectAccessible(url!, Boolean.TRUE)) then
+                    answer = msgbox("The BBj Plugin repository does not exist or is not accessible. Please verify that the provided URL is correct and the reporsitory is available and try again.")
+                    #inpeProjectURL!.focus()
+                    methodret
+                endif
+
+                useCredentials! = Boolean.TRUE
+            endif
+        else
+            useCredentials! = Boolean.TRUE
+
+            if(!#pluginManager!.isPluginProjectAccessible(url!, Boolean.TRUE)) then
+                answer = msgbox("The BBj Plugin repository does not exist or is not accessible. Please verify that the provided URL is correct and the reporsitory is available and try again.")
+                #inpeProjectURL!.focus()
+                methodret
+            endif
+        endif
+
+        rem TODO check if the plugin isn't already added to the list
+        #pluginManager!.addCustomBBjPluginRepository(url!, useCredentials!)
+
+        #updateGrid()
+        
+        #pluginManagerUI!.remotePluginListChanged()
+    methodend
+
+    method private void updateGrid()
+        declare BBjVector vect! 
+        vect! = new BBjVector()
+    
+        declare ArrayList customPluginList!
+        customPluginList! = #pluginManager!.getCustomRemoteBBjPluginList()
+
+        #grid!.clearMainGrid()
+        #grid!.setNumRows(customPluginList!.size())
+        if(!customPluginList!.isEmpty()) then
+            for i=0 to customPluginList!.size()-1
+                customPlugin! = cast(RemoteBBjPlugin, customPluginList!.get(i))
+                vect!.add(customPlugin!.getName())
+                vect!.add("")
+                vect!.add("")
+                vect!.add(customPlugin!.getProjectURL())
+            next i
+            #grid!.setCellText(0, 0, vect!)
+        endif
+        #grid!.deselectAllCells()
+    methodend
+
+    method public void open(BBjSysGui sysGui!)
+        if(#window! = null()) then
+            #init(sysGui!)
+        endif
+        
+        #updateGrid()
+
+        if(#window!.isVisible()) then
+            #window!.focus()
+        else
+            #window!.setVisible(1)
+        endif
+    methodend
+
+    method public void closeWindow(BBjCloseEvent event!)
+        cast(BBjTopLevelWindow, event!.getControl()).setVisible(0)
+    methodend
+
+classend

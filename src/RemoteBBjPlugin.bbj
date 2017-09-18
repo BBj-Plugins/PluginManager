@@ -19,13 +19,34 @@ class public RemoteBBjPlugin extends BBjPlugin
     field private ArrayList tagList!
     field private String downloadURL!
     
+    field private Boolean customSourcePlugin!
+    field private Boolean passwordRequired!
+    
     method public RemoteBBjPlugin()
         #tagList! = new ArrayList()
         #installed! = Boolean.FALSE
+        #customSourcePlugin! = Boolean.FALSE
+        #passwordRequired! = Boolean.FALSE
     methodend
     
     method public void setTagList(ArrayList tagList!)
         #tagList! = tagList!
+    methodend
+    
+    method public void setCustomSourcePlugin(Boolean customSource!)
+        #customSourcePlugin! = customSource!
+    methodend
+    
+    method public Boolean isCustomSourcePlugin()
+        methodret #customSourcePlugin!
+    methodend
+    
+    method public void setPasswordRequired(Boolean passwordRequired!)
+        #passwordRequired! = passwordRequired!
+    methodend
+    
+    method public Boolean isPasswordRequired()
+        methodret #passwordRequired!
     methodend
     
     rem /**

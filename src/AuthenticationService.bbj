@@ -1,0 +1,67 @@
+
+class public AuthenticationService
+
+    method public AuthenticationService()
+    methodend
+    
+    method public Boolean isUsernameSaved()
+        declare BBjThinClient thinClient!
+        thinClient! = bbjapi().getThinClient()
+        username! = thinClient!.getUserProperty("gitUsername", err=*next)
+
+        methodret !(username! = null())
+    methodend
+    
+    method public Boolean isPasswordSaved()
+        declare BBjThinClient thinClient!
+        thinClient! = bbjapi().getThinClient()
+        password! = thinClient!.getUserProperty("gitPassword", err=*next)
+
+        methodret !(password! = null())
+    methodend
+    
+    method public void setUsername(String username!, Boolean save!)
+        bbjapi().setStbl("gitUsername", username!)
+
+        if(save!) then
+            declare BBjThinClient thinClient!
+            thinClient! = bbjapi().getThinClient()
+            thinClient!.setUserProperty("gitUsername", username!)
+        endif
+    methodend
+    
+    method public void setPassword(String password!, Boolean save!)
+        bbjapi().setStbl("gitPassword", password!)
+
+        if(save!) then
+            declare BBjThinClient thinClient!
+            thinClient! = bbjapi().getThinClient()
+            thinClient!.setUserProperty("gitPassword", password!)
+        endif
+    methodend
+
+    method public String getUsername()
+        username! = bbjapi().getStbl("gitUsername", err=*next)
+
+        if(username! = null()) then
+            declare BBjThinClient thinClient!
+            thinClient! = bbjapi().getThinClient()
+            username! = thinClient!.getUserProperty("gitUsername", err=*next)
+        endif
+        
+        methodret username!    
+    methodend
+    
+    method public String getPassword()
+        password! = bbjapi().getStbl("gitPassword", err=*next)
+
+        if(password! = null()) then
+            declare BBjThinClient thinClient!
+            thinClient! = bbjapi().getThinClient()
+            password! = thinClient!.getUserProperty("gitPassword", err=*next)
+        endif
+        
+        methodret password!
+    methodend
+
+classend

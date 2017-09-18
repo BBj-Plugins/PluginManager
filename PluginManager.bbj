@@ -1,5 +1,6 @@
 use java.io.File
 
+use java.util.Base64
 use java.util.HashMap
 use java.util.Iterator
 use java.util.ArrayList
@@ -7,89 +8,166 @@ use java.util.ArrayList
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
 
+use java.io.IOException
+use java.io.BufferedReader
+use java.io.InputStreamReader
+
+use ::PluginManager/gen/BBjPluginJsonGenerator.bbj::BBjPluginJsonGenerator
+
 use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/GithubApiService.bbj::GithubApiService
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 use ::PluginManager/src/BBjPluginListParser.bbj::BBjPluginListParser
 use ::PluginManager/src/InstallationService.bbj::InstallationService
+use ::PluginManager/src/AuthenticationService.bbj::AuthenticationService
+use ::PluginManager/src/CustomPluginListHandler.bbj::CustomPluginListHandler
 use ::PluginManager/src/InstalledPluginFolderParser.bbj::InstalledPluginFolderParser
 
 use ::PluginManagerLauncher.bbj::PluginManagerLauncher
 
 class public PluginManager
 
-    field private InstallationService installationService!
-    field private PluginManagerLauncher pluginManagerLauncher!
     field private File pluginsHome!
+    field private File pluginManagerDirectory!
+    
+    field private AuthenticationService authService!
 
     field private ArrayList remotePlugins!
     field private ArrayList installedPlugins!
+    field private GithubApiService githubApiService!
+    field private InstallationService installationService!
+    field private BBjPluginJsonGenerator pluginJsonGenerator!
+    field private PluginManagerLauncher pluginManagerLauncher!
+    field private CustomPluginListHandler customPluginListHandler!
+    field private InstalledPluginFolderParser pluginFolderParser!
 
     method public PluginManager()
         #pluginManagerLauncher! = new PluginManagerLauncher()
         #pluginsHome! = #pluginManagerLauncher!.getPluginsHome()
+        
+        #authService! = new AuthenticationService()
+
+        #pluginManagerDirectory! = new File(#pluginsHome!, "PluginManager")
+
+        #githubApiService! = new GithubApiService()
+        #pluginJsonGenerator! = new BBjPluginJsonGenerator()
 
         #installationService! = new InstallationService()
-        #installedPlugins! = InstalledPluginFolderParser.getInstalledPlugins(#pluginsHome!)
+        #pluginFolderParser! = new InstalledPluginFolderParser(#this!)
+        #installedPlugins! = #pluginFolderParser!.getInstalledPlugins(#pluginsHome!)
 
         declare File bbjPluginListFile!
-        bbjPluginListFile! = new File(str(#pluginsHome!) + File.separator + "PluginManager" + File.separator + "bbj-plugin-list.json")
+        bbjPluginListFile! = new File(#pluginManagerDirectory!, "bbj-plugin-list.json")
         #remotePlugins! = BBjPluginListParser.parse(bbjPluginListFile!)
 
-        rem adding the dependencies to the installed plugins
-        #addDependencies(InstalledPluginFolderParser.getDependencyMap())
+        declare File customPluginListFile!
+        customPluginListFile! = new File(#pluginManagerDirectory!, "custom-plugin-list.json")
+        #customPluginListHandler! = new CustomPluginListHandler(customPluginListFile!)
         
+        if(customPluginListFile!.exists()) then
+            declare ArrayList customSourcePluginList!
+            customSourcePluginList! = BBjPluginListParser.parse(customPluginListFile!)
+            for i=0 to customSourcePluginList!.size()-1
+                cast(RemoteBBjPlugin, customSourcePluginList!.get(i)).setCustomSourcePlugin(Boolean.TRUE)
+            next i
+            #remotePlugins!.addAll(customSourcePluginList!)
+        endif
+        
+        rem Adding the RemoteBBjPlugin objects as dependencies for the installed plugins
+        #pluginFolderParser!.addDependencies(#installedPlugins!)
+
         rem mark plugins as installed or not installed depending on the remote plugin list
         #initialisePluginState()
     methodend
-    
-    method private void addDependencies(HashMap dependencyMap!)
-        if(dependencyMap! = null() OR dependencyMap!.isEmpty()) then
-            methodret
-        endif
-        
-        if(#installedPlugins! = null() OR #installedPlugins!.isEmpty()) then
-            methodret
-        endif
-        
-        declare Tag tag!
-        declare Iterator it!
-        declare HashMap dMap!
-        declare JsonArray jsonArray!
-        declare JsonObject jsonObject!
-        declare Iterator jsonArrayIterator!
-        declare RemoteBBjPlugin remotePlugin!
-        declare InstalledBBjPlugin installedPlugin!
-        
-        it! = #installedPlugins!.iterator()
-        
-        while(it!.hasNext())
-            installedPlugin! = cast(InstalledBBjPlugin, it!.next())
+
+    method public void addCustomBBjPluginRepository(String url!, Boolean useCredentials!)
+        json! = null()
+
+        if(useCredentials!) then
+            username! = #authService!.getUsername()
+            password! = #authService!.getPassword()
             
-            if(dependencyMap!.containsKey(installedPlugin!)) then
-                jsonArray! = cast(JsonArray, dependencyMap!.get(installedPlugin!))
-                
-                if(jsonArray! = null() OR jsonArray!.size() = 0) then
-                    continue
-                endif
-                
-                dMap! = new HashMap()
-                jsonArrayIterator! = jsonArray!.iterator()
-                while(jsonArrayIterator!.hasNext())
-                    jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
-                    
-                    remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(jsonObject!.get("plugin_name").getAsString()))
-                    tag! = remotePlugin!.getTag(jsonObject!.get("plugin_version").getAsString())
-                    
-                    dMap!.put(remotePlugin!, tag!)
-                wend
-                
-                if(!dMap!.isEmpty()) then
-                    installedPlugin!.getTag().setPluginDependencyMap(dMap!)
-                endif
+            if(username! = null() OR password! = null()) then
+                throw "Unable to verify the Github credentials", 255
+            endif
+        endif
+
+        json! = #githubApiService!.getProjectJson(url!, username!, password!)
+
+        if(json! = null()) then
+            throw "Failed to retrieve the project's information", 255
+        endif
+
+        declare JsonObject jsonObject!
+        jsonObject! = #pluginJsonGenerator!.getProjectJsonObject(json!, username!, password!)
+
+        jsonObject!.addProperty("password_required", useCredentials!)
+
+        #customPluginListHandler!.addCustomPlugin(jsonObject!)
+
+        declare RemoteBBjPlugin remotePlugin!
+        remotePlugin! = BBjPluginListParser.getRemotePluginFromJson(jsonObject!, #remotePlugins!)
+        remotePlugin!.setCustomSourcePlugin(Boolean.TRUE)
+        remotePlugin!.setPasswordRequired(useCredentials!)
+
+        #remotePlugins!.add(remotePlugin!)
+    methodend
+
+    method public ArrayList getCustomRemoteBBjPluginList()
+        declare Iterator it!
+        it! = #remotePlugins!.iterator()
+
+        declare ArrayList customPluginList!
+        customPluginList! = new ArrayList()
+
+        declare RemoteBBjPlugin remotePlugin!
+
+        while(it!.hasNext())
+            remotePlugin! = cast(RemoteBBjPlugin, it!.next())
+
+            if(remotePlugin!.isCustomSourcePlugin()) then
+                customPluginList!.add(remotePlugin!)
             endif
         wend
+
+        methodret customPluginList!
+    methodend
+
+    method public Boolean areGithubCredentialsValid()
+        username! = #authService!.getUsername()
+        password! = #authService!.getPassword()
+        
+        if(username! = null() OR password! = null()) then
+            throw "Unable to verify the Github credentials", 255
+        endif
+    
+        methodret #githubApiService!.areGithubCredentialsValid(username!, password!)
+    methodend
+
+    method public void setGihubCredentials(String username!, String password!, Boolean saveCredentials!)
+        #authService!.setUsername(username!, saveCredentials!)
+        #authService!.setPassword(username!, saveCredentials!)
+    methodend
+
+    method public Boolean areGithubCredentialsSaved()
+        methodret #authService!.isUsernameSaved() OR #authService!.isPasswordSaved()
+    methodend
+
+    method public Boolean isPluginProjectAccessible(String repoURL!, Boolean useCredentials!)
+        if(useCredentials!) then
+            username! = #authService!.getUsername()
+            password! = #authService!.getPassword()
+            
+            if(username! = null() OR password! = null()) then
+                throw "Unable to verify the Github credentials", 255
+            endif
+
+            methodret #githubApiService!.isRepositoryAccessible(repoURL!, username!, password!)
+        endif
+
+        methodret #githubApiService!.isRepositoryAccessible(repoURL!)
     methodend
 
     rem /**
@@ -126,7 +204,7 @@ class public PluginManager
             #setUpdateAvailableFlag(installedPlugin!, tag!, remotePlugin!)
         wend
     methodend
-    
+
     rem /**
     rem  * Checks if the given InstalledBBPlugin's version(=Tag) can be updated or not.
     rem  * 
@@ -141,7 +219,7 @@ class public PluginManager
         else
             version = num(tag!.getName())
             tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.FALSE)
-    
+
             for i=0 to tagList!.size()-1
                 if(!tagList!.get(i).getName().equals(tag!.getName()))then
                     if(num(tagList!.get(i).getName()) > version) then
@@ -210,10 +288,28 @@ class public PluginManager
         tag! = remotePlugin!.getTag(tagName!)
 
         declare InstalledBBjPlugin installedPlugin!
-        installedPlugin! = #installationService!.installBBjPlugin(remotePlugin!, tag!)
-        InstalledPluginFolderParser.setHasDemo(installedPlugin!)
+        if(remotePlugin!.isPasswordRequired()) then
+            username! = bbjapi().getStbl("gitUsername", err=*next)
+            password! = bbjapi().getStbl("gitPassword", err=*next)
+
+            if(username! = null() OR password! = null()) then
+                declare BBjThinClient thinClient!
+                thinClient! = bbjapi().getThinClient()
+                username! = thinClient!.getUserProperty("gitUsername", err=*next)
+                password! = thinClient!.getUserProperty("gitPassword", err=*next)
+
+                if(username! = null() OR password! = null()) then
+                    throw "Unable to verify the Github credentials", 255
+                endif
+            endif
+            installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!, username!, password!)
+        else
+            installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
+        endif
+
+        #pluginFolderParser!.setHasDemo(installedPlugin!)
         #installedPlugins!.add(installedPlugin!)
-       
+
         #setUpdateAvailableFlag(installedPlugin!, installedPlugin!.getTag(), remotePlugin!)
     methodend
 
@@ -235,7 +331,11 @@ class public PluginManager
         rem set the install flag of the remote plugin to false
         declare RemoteBBjPlugin remotePlugin!
         remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(pluginName!))
-        remotePlugin!.setInstalled(Boolean.FALSE)
+
+        rem Check if the plugin's remote pendant exists, which might not always be the case with custom plugins
+        if(remotePlugin! <> null()) then
+            remotePlugin!.setInstalled(Boolean.FALSE)
+        endif
 
         #installedPlugins!.remove(installedPlugin!)
     methodend
@@ -305,41 +405,41 @@ class public PluginManager
             throw "Unknown Version Tag", 260
             methodret
         endif
-        
+
         if(!tag!.isMaster()) then
             latestVersionTagName! = tag!.getName()
-            
+
             declare Tag currentTag!
-            
+
             declare ArrayList tagList!
             tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.TRUE)
-            
+
             declare Iterator it!
             it! = tagList!.iterator()
-            
+
             while(it!.hasNext())
                 currentTag! = cast(Tag, it!.next())
-                
+
                 if(num(currentTag!.getName()) > num(tag!.getName())) then
                     latestVersionTagName! = currentTag!.getName()
                     break
                 endif
             wend
-            
+
             tag! = cast(Tag, remotePlugin!.getTag(latestVersionTagName!))
         endif
-        
+
         rem TODO Make sure not to delete any files that the user created 
         #installationService!.uninstallBBjPlugin(plugin!)
         #installedPlugins!.remove(plugin!)
-        
+
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = #installationService!.installBBjPlugin(remotePlugin!, tag!)
-        InstalledPluginFolderParser.setHasDemo(installedPlugin!)
+        #pluginFolderParser!.setHasDemo(installedPlugin!)
 
         plugin!.setInstallationDate(new java.util.Date())
         plugin!.setLastChangedDate(tag!.getLastChangeDate())
-        
+
         #installedPlugins!.add(installedPlugin!)
     methodend
 
@@ -379,8 +479,8 @@ class public PluginManager
 
         if(tag!.getBBjDependency() <> null() AND !tag!.getBBjDependency().isEmpty()) then
             methodret Boolean.TRUE
-        endif   
-        
+        endif
+
         methodret Boolean.FALSE
     methodend
 
@@ -450,7 +550,7 @@ class public PluginManager
         if(tag! = null()) then
             throw "null object: tag!" , 255
         endif
-        
+
         if(!#hasBBjDependency(tag!)) then
             methodret Boolean.TRUE
         endif
@@ -461,39 +561,39 @@ class public PluginManager
 
         methodret Boolean.FALSE
     methodend
-    
+
     method public Boolean isDependency(InstalledBBjPlugin bbjPlugin!)
         methodret !#getDependentPlugins(bbjPlugin!).isEmpty()
     methodend
-    
+
     method public ArrayList getDependentPlugins(InstalledBBjPlugin bbjPlugin!)
         if(bbjPlugin! = null()) then
             throw "null object: bbjPlugin!",255
         endif
-        
+
         declare ArrayList dependentPlugins!
         declare RemoteBBjPlugin remotePlugin!
         declare InstalledBBjPlugin installedPlugin!
-        
+
         dependentPlugins! = new ArrayList()
-        
+
         remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(bbjPlugin!.getName()))
-        
+
         declare Iterator it!
         it! = #installedPlugins!.iterator()
-        
+
         while(it!.hasNext())
             installedPlugin! = cast(InstalledBBjPlugin,it!.next())
-            
+
             if(installedPlugin!.getID() = bbjPlugin!.getID()) then
                 continue
             endif
-            
+
             if(installedPlugin!.getTag().getPluginDependencyMap().containsKey(remotePlugin!)) then
                 dependentPlugins!.add(installedPlugin!)
             endif
         wend
-        
+
         methodret dependentPlugins!
     methodend
 
