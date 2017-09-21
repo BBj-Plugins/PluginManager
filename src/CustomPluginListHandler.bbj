@@ -71,5 +71,25 @@ class public CustomPluginListHandler
         
         methodret Boolean.FALSE
     methodend
+    
+    method public void removeCustomPlugin(BBjNumber pluginID)
+        declare Iterator it!
+        it! = #customPluginArray!.iterator()
+        
+        declare JsonObject currentObject!
+        while(it!.hasNext())
+            currentObject! = cast(JsonObject, it!.next())
+            
+            if(currentObject!.has("id") AND currentObject!.get("id").getAsBigDecimal() = pluginID) then
+                #customPluginArray!.remove(currentObject!)
+                break
+            endif
+        wend
+        
+        ch = unt 
+        open(ch, mode="o_create,o_trunc") #pluginListFile!.getAbsolutePath()
+        write(ch) #customPluginArray!.toString()
+        close(ch)
+    methodend
 
 classend

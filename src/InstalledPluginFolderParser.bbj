@@ -59,38 +59,6 @@ class public InstalledPluginFolderParser
         methodret pluginList!
     methodend
 
-    method private void addPluginDependencies(ArrayList pluginList!)
-        if(#dependencyMap!.isEmpty()) then
-            methodret
-        endif
-
-        declare JsonArray jsonArray!
-        declare JsonObject jsonObject!
-        declare Iterator jsonArrayIterator!
-        declare Iterator dependencyIterator!
-
-        dependencyIterator! = #dependencyMap!.entrySet().iterator()
-        while(dependencyIterator!.hasNext())
-            entry! = dependencyIterator!.next()
-
-            installedPlugin! = cast(InstalledBBjPlugin, entry!.getKey())
-            jsonArray! = cast(JsonArray, entry!.getValue())
-
-            jsonArrayIterator! = jsonArray!.iterator()
-            while(jsonArrayIterator!.hasNext())
-                jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
-
-                if(jsonObject!.has("plugin_name")) then
-
-                endif
-
-                if(jsonObject!.has("plugin_version")) then
-
-                endif
-            wend
-        wend
-    methodend
-
     method public void setHasDemo(InstalledBBjPlugin installedPlugin!)
         rem Checking if the plugin has a Demo
         declare File demoFolder!
@@ -196,6 +164,10 @@ class public InstalledPluginFolderParser
 
         if(jsonObject!.has("id")) then
             installedPlugin!.setID(jsonObject!.get("id").getAsInt())
+        endif
+        
+        if(jsonObject!.has("project_url")) then
+            installedPlugin!.setProjectURL(jsonObject!.get("project_url").getAsString())
         endif
 
         if(jsonObject!.has("installation_date")) then

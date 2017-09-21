@@ -69,10 +69,12 @@ class public PluginManager
         if(customPluginListFile!.exists()) then
             declare ArrayList customSourcePluginList!
             customSourcePluginList! = BBjPluginListParser.parse(customPluginListFile!)
-            for i=0 to customSourcePluginList!.size()-1
-                cast(RemoteBBjPlugin, customSourcePluginList!.get(i)).setCustomSourcePlugin(Boolean.TRUE)
-            next i
-            #remotePlugins!.addAll(customSourcePluginList!)
+            if(customSourcePluginList! <> null() AND !customSourcePluginList!.isEmpty()) then
+                for i=0 to customSourcePluginList!.size()-1
+                    cast(RemoteBBjPlugin, customSourcePluginList!.get(i)).setCustomSourcePlugin(Boolean.TRUE)
+                next i
+                #remotePlugins!.addAll(customSourcePluginList!)
+            endif
         endif
         
         rem Adding the RemoteBBjPlugin objects as dependencies for the installed plugins
@@ -113,6 +115,11 @@ class public PluginManager
         remotePlugin!.setPasswordRequired(useCredentials!)
 
         #remotePlugins!.add(remotePlugin!)
+    methodend
+    
+    method public void removeCustomPluginRepository(RemoteBBjPlugin remotePlugin!)
+        #customPluginListHandler!.removeCustomPlugin(remotePlugin!.getID())
+        #remotePlugins!.remove(remotePlugin!)
     methodend
 
     method public ArrayList getCustomRemoteBBjPluginList()
@@ -272,21 +279,7 @@ class public PluginManager
     rem  * 
     rem  * @param pluginName! The name of the plugin to install
     rem  */
-    method public void installBBjPlugin(String pluginName!, String tagName!)
-        rem get the plugin object from the plugin name 
-        declare RemoteBBjPlugin remotePlugin!
-        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(pluginName!))
-
-        if(remotePlugin! = null()) then
-            throw "Unknown BBj Plugin for the given name: " + pluginName!,  255
-        endif
-
-        if(!remotePlugin!.hasTag(tagName!)) then
-            throw "Unknown Plugin tag: " + tagName!,  255
-        endif
-
-        tag! = remotePlugin!.getTag(tagName!)
-
+    method public void installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
         declare InstalledBBjPlugin installedPlugin!
         if(remotePlugin!.isPasswordRequired()) then
             username! = bbjapi().getStbl("gitUsername", err=*next)
@@ -318,19 +311,16 @@ class public PluginManager
     rem  * 
     rem  * @param pluginName! The name of the plugin to uninstall
     rem  */
-    method public void uninstallBBjPlugin(String pluginName!)
-        declare InstalledBBjPlugin installedPlugin!
-        installedPlugin! = cast(InstalledBBjPlugin, #getInstalledPlugin(pluginName!))
-
+    method public void uninstallPlugin(InstalledBBjPlugin installedPlugin!)
         if(installedPlugin! = null()) then
             throw "Unknown plugin: " + pluginName!, 255
         endif
 
-        #installationService!.uninstallBBjPlugin(installedPlugin!)
+        #installationService!.uninstallPlugin(installedPlugin!)
 
         rem set the install flag of the remote plugin to false
         declare RemoteBBjPlugin remotePlugin!
-        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(pluginName!))
+        remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(installedPlugin!.getName()))
 
         rem Check if the plugin's remote pendant exists, which might not always be the case with custom plugins
         if(remotePlugin! <> null()) then
@@ -430,11 +420,11 @@ class public PluginManager
         endif
 
         rem TODO Make sure not to delete any files that the user created 
-        #installationService!.uninstallBBjPlugin(plugin!)
+        #installationService!.uninstallPlugin(plugin!)
         #installedPlugins!.remove(plugin!)
 
         declare InstalledBBjPlugin installedPlugin!
-        installedPlugin! = #installationService!.installBBjPlugin(remotePlugin!, tag!)
+        installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
         #pluginFolderParser!.setHasDemo(installedPlugin!)
 
         plugin!.setInstallationDate(new java.util.Date())
@@ -446,15 +436,8 @@ class public PluginManager
     rem /**
     rem  * Executes the Demo.bbj file in the given plugin's Demo folder.
     rem  */
-    method public void runDemo(String pluginName!)
-        declare InstalledBBjPlugin installedPlugin!
-        installedPlugin! = cast(InstalledBBjPlugin, #getInstalledPlugin(pluginName!))
-
-        if(installedPlugin! = null()) then
-            throw "Unknown plugin: " + pluginName!, 255
-        endif
-
-        command! = argv(0) + " -q " + installedPlugin!.getInstallationDirectory().toString() + File.separator + "Demo" + File.separator + "Demo.bbj"
+    method public void runDemo(InstalledBBjPlugin installedPlugin!, String demoProgramName!)
+        command! = argv(0) + " -q " + installedPlugin!.getInstallationDirectory().toString() + File.separator + "Demo" + File.separator + demoProgramName!
         print "launching: " + command!
         a = scall(command!)
     methodend

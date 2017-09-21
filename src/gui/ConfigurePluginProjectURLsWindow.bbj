@@ -1,0 +1,172 @@
+use ::PluginManager/PluginManager.bbj::PluginManager
+use ::PluginManager/PluginManagerUI.bbj::PluginManagerUI
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+
+use java.lang.StringBuilder
+
+use java.util.Iterator
+use java.util.ArrayList
+
+class public ConfigurePluginProjectURLsWindow
+
+    field private BBjSysGui sysGui!
+    field private PluginManager pluginManager!
+    field private PluginManagerUI pluginManagerUI!
+
+    field private BBjTopLevelWindow window!
+    field private BBjInputE inpeProjectURL!
+    field private BBjButton btnAddProjectURL!
+    field private BBjButton btnRemoveProject!
+
+    field private BBjStandardGrid grid!
+
+    field private ArrayList pluginList!
+
+    method public ConfigurePluginProjectURLsWindow(PluginManager pluginManager!, PluginManagerUI pluginManagerUI!)
+        #pluginManager! = pluginManager!
+        #pluginManagerUI! = pluginManagerUI!
+    methodend
+
+    method private void init(BBjSysGui sysGui!)
+        #sysGui! = sysGui!
+
+        window_width = 800
+        window_height = 275
+
+        declare java.awt.Rectangle screenBounds!
+        screenBounds! = sysGui!.getSystemMetrics().getScreenBounds()
+
+        screen_width = screenBounds!.getWidth()
+        screen_height = screenBounds!.getHeight()
+
+        #window! = sysGui!.addWindow(200, (screen_width/2 - window_width/2), (screen_height/2 - window_height/2), window_width, window_height, "Configure Plugin Project URLs", $00000012$)
+        #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
+
+        window_width  = #window!.getWidth()
+        window_height = #window!.getHeight()
+
+        window_next_id = #window!.getAvailableControlID()
+        #window!.addStaticText(window_next_id, 10, 20, 175, 25, "Custom BBj Plugin Project URL: ", $8000$)
+
+        window_next_id = #window!.getAvailableControlID()
+        #inpeProjectURL! = #window!.addInputE(window_next_id, 195, 13, 350, 25, "")
+        #inpeProjectURL!.setInsertMode(0)
+
+        rem TODO remove 
+        #inpeProjectURL!.setText("https://github.com/BasisHub/BBjGridExWidget")
+
+        window_next_id = #window!.getAvailableControlID()
+        #btnAddProjectURL! = #window!.addButton(window_next_id, 555, 13, 85, 25, "Add")
+        #btnAddProjectURL!.setCallback(BBjButton.ON_BUTTON_PUSH, #this!, "addProjectURLButtonPush")
+
+        window_next_id = #window!.getAvailableControlID()
+        #grid! = #window!.addGrid(window_next_id, 10, 50, window_width-20 , 175)
+        #grid!.setHasColumnHeader(1)
+        #grid!.setFitToGrid(BBjSysGui.AUTO_RESIZE_LAST_COLUMN)
+        #grid!.setSelectionMode(#grid!.GRID_SELECT_ROW)
+
+        columnHeaderVector! = new BBjVector()
+        columnHeaderVector!.add("Plugin ID")
+        columnHeaderVector!.add("Plugin Name")
+        columnHeaderVector!.add("Version")
+        columnHeaderVector!.add("Last Update")
+        columnHeaderVector!.add("Project URL")
+
+        #grid!.setColumnWidth(0, 0)
+        #grid!.setNumColumns(columnHeaderVector!.size())
+        #grid!.setColumnHeaderText(columnHeaderVector!)
+        #grid!.setRowHeight(20)
+
+        control_width = 75
+        control_height = 25
+        control_x = #window!.getWidth() - control_width - 10
+        control_y = #window!.getHeight() - control_height - 10
+        window_next_id = #window!.getAvailableControlID()
+        #btnRemoveProject! = #window!.addButton(window_next_id, control_x, control_y, control_width, control_height, "Remove")
+        #btnRemoveProject!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "removePluginButtonPush")
+    methodend
+
+    method public void removePluginButtonPush(BBjButtonPushEvent event!)
+        declare RemoteBBjPlugin remotePlugin!
+        remotePlugin! = cast(RemoteBBjPlugin, #getSelectedPlugin())
+
+        if(remotePlugin! = null()) then
+            print "Error"
+            methodret
+        endif
+
+        bbjapi().postCustomEvent(PluginManagerUI.getREMOVE_CUSTOM_PLUGIN(), remotePlugin!)
+    methodend
+
+    method public RemoteBBjPlugin getSelectedPlugin()
+        pluginID! = #grid!.getCellText(#grid!.getSelectedRow(), 0)
+
+        declare RemoteBBjPlugin remotePlugin!
+
+        declare Iterator it!
+        it! = #pluginList!.iterator()
+        while(it!.hasNext())
+            remotePlugin! = cast(RemoteBBjPlugin, it!.next())
+
+            if(remotePlugin!.getID() = num(pluginID!)) then
+                methodret remotePlugin!
+            endif
+        wend
+
+        methodret null()
+    methodend
+
+    method public void addProjectURLButtonPush(BBjButtonPushEvent event!)
+        rem get the user inserted URL
+        url! = #inpeProjectURL!.getText()
+
+        bbjapi().postCustomEvent(PluginManagerUI.getADD_CUSTOM_PLUGIN(), url!)
+    methodend
+
+    method public void update(ArrayList customPluginList!)
+        declare BBjVector vect!
+        vect! = new BBjVector()
+
+        #pluginList! = customPluginList!
+
+        #grid!.clearMainGrid()
+        #grid!.setNumRows(customPluginList!.size())
+        if(!customPluginList!.isEmpty()) then
+            for i=0 to customPluginList!.size()-1
+                customPlugin! = cast(RemoteBBjPlugin, customPluginList!.get(i))
+
+                vect!.add(customPlugin!.getID())
+                vect!.add(customPlugin!.getName())
+                vect!.add("")
+                vect!.add("")
+                vect!.add(customPlugin!.getProjectURL())
+            next i
+            #grid!.setCellText(0, 0, vect!)
+        endif
+
+        #grid!.deselectAllCells()
+        #grid!.setSelectedCell(0,0)
+    methodend
+
+    method public void open(BBjSysGui sysGui!, ArrayList customPluginList!)
+        if(#window! = null()) then
+            #init(sysGui!)
+        endif
+
+        #update(customPluginList!)
+
+        if(#window!.isVisible()) then
+            #window!.focus()
+        else
+            #window!.setVisible(1)
+        endif
+    methodend
+
+    rem /**
+    rem  * Hiding the window to make it appear as closed, so that it can be restored faster later on.
+    rem  */
+    method public void closeWindow(BBjCloseEvent event!)
+        cast(BBjTopLevelWindow, event!.getControl()).setVisible(0)
+    methodend
+
+classend

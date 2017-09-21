@@ -10,6 +10,9 @@ class public InstalledBBjPlugin extends BBjPlugin
     rem the date of the plugin installation 
     field private java.util.Date installationDate!
     
+    rem the github project URL
+    field private String projectURL!
+    
     rem the name of the installed version tag
     field private Tag tag!
     
@@ -30,6 +33,14 @@ class public InstalledBBjPlugin extends BBjPlugin
     method public InstalledBBjPlugin()
         #updateAvailable! = Boolean.FALSE
         #hasDemo! = Boolean.FALSE
+    methodend
+    
+    method public void setProjectURL(String projectURL!)
+        #projectURL! = projectURL!
+    methodend
+    
+    method public String getProjectURL()
+        methodret #projectURL!
     methodend
     
     method public void setDemoProgramNames(ArrayList programNames!)

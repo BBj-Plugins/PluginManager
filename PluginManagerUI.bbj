@@ -4,10 +4,11 @@ use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
-use ::PluginManager/src/ConfigurePluginProjectURLsWindow.bbj::ConfigurePluginProjectURLsWindow
 
-use ::PluginManager/src/gui/InstalledPluginTab.bbj::InstalledPluginTab
 use ::PluginManager/src/gui/RemotePluginTab.bbj::RemotePluginTab
+use ::PluginManager/src/gui/InstalledPluginTab.bbj::InstalledPluginTab
+use ::PluginManager/src/gui/GithubCredentialWindow.bbj::GithubCredentialWindow
+use ::PluginManager/src/gui/ConfigurePluginProjectURLsWindow.bbj::ConfigurePluginProjectURLsWindow
 
 use java.util.Iterator
 use java.util.ArrayList
@@ -17,9 +18,13 @@ use java.text.SimpleDateFormat
 
 class public PluginManagerUI
 
-    field public static String INSTALL_PLUGIN_REQUEST! = "INSTALL_PLUGIN_REQUEST"
-    
-    field public static String UPDATE_PLUGIN_REQUEST! = "UPDATE_PLUGIN_REQUEST" 
+    field public static String ADD_CUSTOM_PLUGIN! = "ADD_CUSTOM_PLUGIN"
+    field public static String REMOVE_CUSTOM_PLUGIN! = "REMOVE_CUSTOM_PLUGIN"
+
+    field public static String RUN_DEMO_PROGRAM! = "RUN_DEMO_PROGRAM"
+    field public static String INSTALL_PLUGIN_END! = "INSTALL_PLUGIN_END"
+    field public static String INSTALL_PLUGIN_REQUEST!   = "INSTALL_PLUGIN_REQUEST"
+    field public static String UPDATE_PLUGIN_REQUEST!    = "UPDATE_PLUGIN_REQUEST"
     field public static String UNINSTALL_PLUGIN_REQUEST! = "UNINSTALL_PLUGIN_REQUEST"
 
     field private PluginManager pluginManager!
@@ -32,16 +37,20 @@ class public PluginManagerUI
     field private RemotePluginTab remoteTab!
     field private InstalledPluginTab installedTab!
 
+    field private GithubCredentialWindow credentialWindow!
+
     field private ConfigurePluginProjectURLsWindow configurePluginProjectURLsWindow!
 
     method public PluginManagerUI()
         #pluginManager! = new PluginManager()
         #configurePluginProjectURLsWindow! = new ConfigurePluginProjectURLsWindow(#pluginManager!, #this!)
+        #credentialWindow! = new GithubCredentialWindow()
         #init()
     methodend
 
     method private void init()
         #sysGui! = BBjAPI().openSysGui("X0")
+        #sysGui!.setRepaintEnabled(0)
 
         window_width = 1000
         window_height = 600
@@ -53,7 +62,6 @@ class public PluginManagerUI
         screen_height = screenBounds!.getHeight()
         #window! = #sysGui!.addWindow(100, (screen_width/2 - window_width/2), (screen_height/2 - window_height/2), window_width, window_height, "Plugin Manager", $00000002$)
         #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
-        #window!.setCallback(BBjAPI.ON_RESIZE, #this!, "resizeWindow")
 
         window_next_id = #window!.getAvailableControlID()
         #mainWindowMenuBar! = cast(BBjMenuBar, #window!.addMenuBar())
@@ -78,7 +86,7 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
 
         row_x = 10
         row_y = 50
-        
+
         tab_width = window_width-20
         tab_height = window_height-row_y-10
         window_next_id = #window!.getAvailableControlID()
@@ -91,25 +99,158 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
         bbjapi().setCustomEventCallback(#UNINSTALL_PLUGIN_REQUEST!, #this!, "uninstallPluginRequest")
 
         #remoteTab! = new RemotePluginTab(#window!, #tabCtrl!.getWidth(), #tabCtrl!.getHeight(), #sysGui!)
-        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.FALSE))
+        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
         #tabCtrl!.addTab("Available Plugins", #remoteTab!.getChildWindow())
         bbjapi().setCustomEventCallback(#INSTALL_PLUGIN_REQUEST!, #this!, "installPluginRequest")
+        bbjapi().setCustomEventCallback(#RUN_DEMO_PROGRAM!, #this!, "runDemoProgram")
+        bbjapi().setCustomEventCallback(#ADD_CUSTOM_PLUGIN!, #this!, "addCustomPlugin")
+        bbjapi().setCustomEventCallback(#REMOVE_CUSTOM_PLUGIN!, #this!, "removeCustomRemotePlugin")
+
+        #sysGui!.setRepaintEnabled(1)
     methodend
-    
+
+    method public void removeCustomRemotePlugin(BBjCustomEvent event!)
+        declare RemoteBBjPlugin remotePlugin!
+        remotePlugin! = cast(RemoteBBjPlugin, event!.getObject())
+
+        #pluginManager!.removeCustomPluginRepository(remotePlugin!)
+
+        #configurePluginProjectURLsWindow!.update(#pluginManager!.getCustomRemoteBBjPluginList())
+        #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
+        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
+    methodend
+
+    rem /**
+    rem  * Gets called when a new custom plugin should be added to the list of plugins
+    rem  */
+    method public void addCustomPlugin(BBjCustomEvent event!)
+        url! = str(event!.getObject())
+
+        rem first check if the Github credentials are set
+        if(!#pluginManager!.areGithubCredentialsSaved()) then
+
+            useCredentials! = Boolean.FALSE
+            rem if not, first check if the repo is public, if not prompt for the user credentials
+            if(!#pluginManager!.isPluginProjectAccessible(url!, Boolean.FALSE)) then
+                sb! = new StringBuilder("The provided project repository URL cannot be accessed(404).")
+                sb!.append("This indicates either that the URL is wrong or the repository is private.")
+                sb!.append($0A$)
+                sb!.append("If the repository is private, you'll need to provide valid Github credentials to access it.")
+                sb!.append("Do you want to add Github credentials ?")
+
+                answer = msgbox(sb!.toString(), 4)
+
+                if(answer <> 6) then
+                    methodret
+                endif
+
+                invalidCredentials! = Boolean.TRUE
+                while(invalidCredentials!)
+                    #credentialWindow!.open(#sysGui!)
+
+                    if(#credentialWindow!.dialogCanceled()) then
+                        methodret
+                    endif
+
+                    #pluginManager!.setGihubCredentials(#credentialWindow!.getUsername(), #credentialWindow!.getPassword(), #credentialWindow!.saveCredentials())
+                    if(#pluginManager!.areGithubCredentialsValid()) then
+                        invalidCredentials! = Boolean.FALSE
+                        break
+                    endif
+
+                    a = msgbox("The entered Github Login Credentials are not valid.")
+                wend
+
+                if(!#pluginManager!.isPluginProjectAccessible(url!, Boolean.TRUE)) then
+                    answer = msgbox("The BBj Plugin repository does not exist or is not accessible. Please verify that the provided URL is correct and the reporsitory is available and try again.")
+                    #inpeProjectURL!.focus()
+                    methodret
+                endif
+
+                useCredentials! = Boolean.TRUE
+            endif
+        else
+            useCredentials! = Boolean.TRUE
+
+            if(!#pluginManager!.isPluginProjectAccessible(url!, Boolean.TRUE)) then
+                answer = msgbox("The BBj Plugin repository does not exist or is not accessible. Please verify that the provided URL is correct and the reporsitory is available and try again.")
+                #inpeProjectURL!.focus()
+                methodret
+            endif
+        endif
+
+        rem TODO check if the plugin isn't already added to the list
+        #pluginManager!.addCustomBBjPluginRepository(url!, useCredentials!)
+
+        #configurePluginProjectURLsWindow!.update(#pluginManager!.getCustomRemoteBBjPluginList())
+        #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
+        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
+    methodend
+
+    method public void runDemoProgram(BBjCustomEvent event!)
+        declare HashMap map!
+        map! = cast(HashMap, event!.getObject())
+
+        declare Iterator it!
+        it! = map!.entrySet().iterator()
+
+        declare InstalledBBjPlugin installedPlugin!
+
+        while(it!.hasNext())
+            entry! = it!.next()
+
+            installedPlugin! = cast(InstalledBBjPlugin, entry!.getKey())
+            demoProgramName! = entry!.getValue()
+
+            break
+        wend
+
+        #pluginManager!.runDemo(installedPlugin!, demoProgramName!)
+    methodend
+
     method public void updatePluginRequest(BBjCustomEvent event!)
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, event!.getObject())
-        
+
         #pluginManager!.updatePlugin(installedPlugin!)
         #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
+        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
     methodend
-    
+
+    rem /**
+    rem  * Uninstalls the plugin described in the given event! payload, and updates the tabs entries.
+    rem  * 
+    rem  * @param event! The event with the plugin to uninstall.
+    rem  */
     method public void uninstallPluginRequest(BBjCustomEvent event!)
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, event!.getObject())
-        
-        rem TODO uninstall
-        rem #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
+
+        if(#pluginManager!.isDependency(installedPlugin!)) then
+            declare Iterator it!
+            declare ArrayList list!
+            declare StringBuilder sb!
+            declare InstalledBBjPlugin plugin!
+
+            sb! = new StringBuilder("The selected plugin is a dependency of the following plugins: " + $0A$ + $0A$)
+            list! = #pluginManager!.getDependentPlugins(installedPlugin!)
+            it! = list!.iterator()
+
+            while(it!.hasNext())
+                plugin! = cast(InstalledBBjPlugin, it!.next())
+                sb!.append(plugin!.getName() + $0A$)
+            wend
+            sb!.append($0A$ + "Uninstalling it may break the plugins listed above. Do you want to uninstall it anyway ?")
+
+            a = msgbox(sb!.toString(), 4)
+            if(a <> 6) then
+                methodret
+            endif
+        endif
+
+        #pluginManager!.uninstallPlugin(installedPlugin!)
+        #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
+        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
     methodend
 
     method public void installPluginRequest(BBjCustomEvent event!)
@@ -130,6 +271,9 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
 
             #installPlugin(remotePlugin!, tag!)
         wend
+
+        #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
+        #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
     methodend
 
     method public void installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
@@ -177,52 +321,33 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
 
                     if(a = 6) then
                         declare Tag dependencyTag!
-                        declare RemoteBBjPlugin remotePlugin!
+                        declare RemoteBBjPlugin remoteDependencyPlugin!
 
                         it! = dependencyMap!.entrySet().iterator()
                         while(it!.hasNext())
                             entry! = it!.next()
 
                             dependencyTag! = cast(Tag, entry!.getValue())
-                            remotePlugin! = cast(RemoteBBjPlugin, entry!.getKey())
+                            remoteDependencyPlugin! = cast(RemoteBBjPlugin, entry!.getKey())
 
-                            #installPlugin(remotePlugin!, cast(Tag, entry!.getValue()))
+                            #installPlugin(remoteDependencyPlugin!, cast(Tag, entry!.getValue()))
                         wend
                      endif
                 endif
             endif
         endif
 
-        #pbInstallation!.setText("Installing plugin: " + pluginName!)
-        #pbInstallation!.setIndeterminate(1)
-        #pbInstallation!.setVisible(1)
+        #pluginManager!.installPlugin(remotePlugin!, tag!)
 
-        #pluginManager!.installBBjPlugin(pluginName!, tagName!)
-        #pbInstallation!.setIndeterminate(0)
-        #pbInstallation!.setValue(100)
-        #pbInstallation!.setText("Plugin Installed")
+        rem Throwing the event so that the UI can hide the progressbar
+        bbjapi().postCustomEvent(#INSTALL_PLUGIN_END!, "")
 
-        wait 1
-
+        #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
         #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
     methodend
 
     method public void customizePluginProjectURLsMenuItemSelected(BBjMenuItemSelectEvent event!)
-        #configurePluginProjectURLsWindow!.open(#sysGui!)
-    methodend
-
-    method public void resizeWindow(BBjResizeEvent event!)
-REM         tab_width = #window!.getWidth() - 20
-REM         tab_height = #window!.getHeight() - 60
-REM 
-REM         #tabCtrl!.setSize(tab_width, tab_height)
-REM         rem #cwdAvailablePlugins!.setSize(tab_width, tab_height)
-REM         #cwdInstalledPlugins!.setSize(tab_width, tab_height)
-REM 
-REM         rem #btnInstallPlugin!.setLocation(#cwdAvailablePlugins!.getWidth()-85, #cwdAvailablePlugins!.getHeight()-35)
-REM 
-REM         #btnUninstallPlugin!.setLocation(#cwdInstalledPlugins!.getWidth()-85, #cwdInstalledPlugins!.getHeight()-35)
-REM         #btnUpdatePlugin!.setLocation(#cwdInstalledPlugins!.getWidth()-170, #cwdInstalledPlugins!.getHeight()-35)
+        #configurePluginProjectURLsWindow!.open(#sysGui!, #pluginManager!.getCustomRemoteBBjPluginList())
     methodend
 
     method public static String getDisplayDate(java.util.Date date!)

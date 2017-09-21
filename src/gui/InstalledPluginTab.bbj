@@ -4,6 +4,7 @@ use java.util.ArrayList
 
 use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/PluginManagerUI.bbj::PluginManagerUI
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 
 class public InstalledPluginTab
@@ -46,8 +47,8 @@ class public InstalledPluginTab
         rem displaying the control on the right side
         row_x = cw_width - control_width - space
         cw_next_id = childWindow!.getAvailableControlID()
-        #mbRunDemo! = cast(BBjMenuButton, childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "Run Demo.bbj", $0001$))
-        #mbRunDemo!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runDemoButtonPush")
+        #mbRunDemo! = cast(BBjMenuButton, childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "Demo.bbj", $0001$))
+        #mbRunDemo!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "demoProgramButtonPush")
         #mbRunDemo!.setBorderPainted(Boolean.TRUE)
         #mbRunDemo!.setEnabled(0)
         row_x = row_x + cntrol_width+ space
@@ -56,7 +57,7 @@ class public InstalledPluginTab
         rem new row
         row_x = 10
 
-        control_width = cw_width-20
+        control_width = cw_width - 2*space
         control_height = 175
         cw_next_id = childWindow!.getAvailableControlID()
         #grdPlugins! = childWindow!.addGrid(cw_next_id, row_x, row_y, control_width, control_height, $8140$)
@@ -73,6 +74,10 @@ class public InstalledPluginTab
         columnHeaderVector!.add("Plugin State")
         #grdPlugins!.setNumColumns(columnHeaderVector!.size())
         #grdPlugins!.setColumnHeaderText(columnHeaderVector!)
+        #grdPlugins!.setColumnAlignment(1, #grdPlugins!.GRID_ALIGN_LEFT)
+        #grdPlugins!.setColumnAlignment(2, #grdPlugins!.GRID_ALIGN_LEFT)
+        #grdPlugins!.setColumnAlignment(3, #grdPlugins!.GRID_ALIGN_LEFT)
+        #grdPlugins!.setColumnAlignment(4, #grdPlugins!.GRID_ALIGN_LEFT)
         #grdPlugins!.setRowHeight(20)
         #grdPlugins!.setFitToGrid(1)
         #grdPlugins!.setColumnWidth(0, 0)
@@ -146,7 +151,7 @@ class public InstalledPluginTab
         control_width = 300
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #txtSelectedInstalledPluginProjectURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "http://github.com/BBj-Plugins/JnlpExePacker")
+        #txtSelectedInstalledPluginProjectURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
 
         declare BBjFont defaultFont!
         defaultFont! = #txtSelectedInstalledPluginProjectURL!.getFont()
@@ -156,7 +161,7 @@ class public InstalledPluginTab
         cw_next_id = childWindow!.getAvailableControlID()
         btn! = childWindow!.addButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
         btn!.setOpaque(0)
-        btn!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "lastPluginProjectURLButtonPush")
+        btn!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginProjectURLButtonPush")
 
         rem new column
         row_x = column2_x
@@ -243,11 +248,11 @@ class public InstalledPluginTab
         row_x = row_x + control_width + space
 
         rem The update plugin button
-        
+
         control_width = 75
         control_height = 25
         row_x = cw_width - (2 * control_width) - (2 * space)
-        row_y = cw_height - control_height - space
+        row_y = cw_height - control_height - (2 * space)
         cw_next_id = childWindow!.getAvailableControlID()
         #btnUpdatePlugin! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x , row_y, control_width, control_height, "Update"))
         #btnUpdatePlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "updatePlugin")
@@ -290,7 +295,8 @@ class public InstalledPluginTab
         #grdPlugins!.deselectAllCells()
 
         #grdPlugins!.setSelectedCell(0,0)
-        rem #updateInstalledPluginInformation()
+        #installedPluginGridRowSelected(null())
+        #updateInstalledPluginInformation()
     methodend
 
     method public InstalledBBjPlugin getInstalledPlugin(BBjNumber id)
@@ -323,11 +329,16 @@ class public InstalledPluginTab
         methodret installedPlugin!
     methodend
 
-    method public void lastPluginProjectURLButtonPush(BBjButtonPushEvent event!)
+    method public void pluginProjectURLButtonPush(BBjButtonPushEvent event!)
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
 
-        rem TODO extend the locally saved infos with the project URL --> bbjapi().getThinClient().browse()
+        if(installedPlugin! = null()) then
+            rem display error 
+            methodret
+        endif
+
+        bbjapi().getThinClient().browse(installedPlugin!.getProjectURL())
     methodend
 
     method public void updatePlugin(BBjButtonPushEvent event!)
@@ -344,49 +355,14 @@ class public InstalledPluginTab
 
     method public void uninstallPlugin(BBjButtonPushEvent event!)
         declare InstalledBBjPlugin installedPlugin!
-        installedPlugin! = cast(InstalledBBjPlugin, #pluginManager!.getInstalledPlugin(#grdPlugins!.getCellText(#grdPlugins!.getSelectedRow(), 0)))
-
-        if(#pluginManager!.isDependency(installedPlugin!)) then
-            declare Iterator it!
-            declare ArrayList list!
-            declare StringBuilder sb!
-            declare InstalledBBjPlugin plugin!
-
-            sb! = new StringBuilder("The selected plugin is a dependency of the following plugins: " + $0A$ + $0A$)
-            list! = #pluginManager!.getDependentPlugins(installedPlugin!)
-            it! = list!.iterator()
-
-            while(it!.hasNext())
-                plugin! = cast(InstalledBBjPlugin, it!.next())
-
-                sb!.append(plugin!.getName() + $0A$)
-            wend
-
-            sb!.append($0A$ + "Uninstalling it may break the plugins listed above. Do you want to uninstall it anyway ?")
-
-            a = msgbox(sb!.toString(), 4)
-
-            if(a <> 6) then
-                methodret
-            endif
-        endif
-
-        #pluginManager!.uninstallBBjPlugin(#grdPlugins!.getCellText(#grdPlugins!.getSelectedRow(), 0))
-        #updateGrids(#cbxIncludeDevPlugins!.isSelected())
-    methodend
-
-    method public void runDemoButtonPush(BBjButtonPushEvent event!)
-        declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
 
         if(installedPlugin! = null()) then
-            rem TODO reset the values
+            print "Error"
             methodret
         endif
 
-        rem TODO throw custom event with the plugin name and the demo program name
-        print "Run Demo "
-        rem #pluginManager!.runDemo(#grdPlugins!.getCellText(#grdPlugins!.getSelectedRow(), 0))
+        bbjapi().postCustomEvent(PluginManagerUI.getUNINSTALL_PLUGIN_REQUEST(), installedPlugin!)
     methodend
 
     method private void updateInstalledPluginInformation()
@@ -400,6 +376,8 @@ class public InstalledPluginTab
 
         rem updating the plugin name
         #txtSelectedInstalledPluginName!.setText(installedPlugin!.getName())
+
+        #txtSelectedInstalledPluginProjectURL!.setText(installedPlugin!.getProjectURL())
 
         rem updatig the plugin status
         if(installedPlugin!.isUpdateAvailable()) then
@@ -453,50 +431,93 @@ class public InstalledPluginTab
             #btnUpdatePlugin!.setEnabled(0)
         endif
 
-        rem Enabling the Run demo button if the plugin has a demo program
-        if(installedPlugin!.hasDemo()) then
-REM             declare ArrayList demoProgramNameList!
-REM             demoProgramNameList! = installedPlugin!.getDemoProgramNames()
-REM             
-REM             if(demoProgramNameList!.size() = 1) then
-REM                 #mbRunDemo!.removeDropdownMenu()  
-REM                 
-REM                 #mbRunDemo!.setBeep(Boolean.TRUE)
-REM  
-REM                 #mbRunDemo!.setText("Run " + demoProgramNameList!.get(0))
-REM                 #mbRunDemo!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runDemoButtonPush")
-REM             else
-REM                 declare Iterator it!
-REM                 it! = demoProgramNameList!.iterator()
-REM                 
-REM                 declare BBjPopupMenu popupMenu!
-REM                 popupMenu! = #sysGui!.addPopupMenu()
-REM                 
-REM                 id = 1
-REM                 while(it!.hasNext())
-REM                     menuItem! = popupMenu!.addMenuItem(0-id, cast(String, it!.next()))
-REM                     menuItem!.setCallback(BBjAPI.ON_MENU_ITEM_SELECT, #this!, "demoProgramMenuItemSelected")
-REM                     id = id + 1 
-REM                 wend
-REM                 
-REM                 rem popupMenu!.setCallback(BBjAPI.ON_POPUP_ITEM_SELECT, #this!, "demoProgramPopupItemSelected")
-REM 
-REM                 #mbRunDemo!.setText("Run demo program ...")
-REM                 #mbRunDemo!.setDropdownMenu(popupMenu!)
-REM                 
-REM                 rem popupMenu!.setCallback(BBjAPI.ON_POPUP_ITEM_SELECT, #this!, "demoProgramPopupItemSelected")
-REM             endif
-
-            #mbRunDemo!.setEnabled(1)
-        else
-REM             #mbRunDemo!.removeDropdownMenu()
-            #mbRunDemo!.setEnabled(0)
-        endif
+        #updateDemoButtonState(installedPlugin!)
 
         #updateInstalledPluginInformation()
 
         rem Enabling the uninstall button
         #btnUninstallPlugin!.setEnabled(1)
+    methodend
+    
+    method private void updateDemoButtonState(InstalledBBjPlugin installedPlugin!)
+        rem Enabling the Run demo button if the plugin has a demo program
+        if(installedPlugin!.hasDemo()) then
+            declare ArrayList demoProgramNameList!
+            demoProgramNameList! = installedPlugin!.getDemoProgramNames()
+
+            if(demoProgramNameList!.size() = 1) then
+                #mbRunDemo!.removeDropdownMenu()
+                #mbRunDemo!.setText(str(demoProgramNameList!.get(0)))
+            else
+                declare Iterator it!
+                it! = demoProgramNameList!.iterator()
+                
+                rem Always preselect the Demo.bbj program if present
+                if(demoProgramNameList!.contains("Demo.bbj")) then
+                    excludeName! = "Demo.bbj"
+                else
+                    excludeName! = str(demoProgramNameList!.get(0))
+                endif
+                
+                #mbRunDemo!.setText(excludeName!)
+
+                declare BBjPopupMenu popupMenu!
+                popupMenu! = #sysGui!.addPopupMenu()
+
+                declare BBjMenuItem menuItem!
+
+                id = 1
+                while(it!.hasNext())
+                    demoProgramName! = cast(String, it!.next())
+                    
+                    if(demoProgramName! = excludeName!) then
+                        continue
+                    endif
+                    
+                    menuItem! = cast(BBjMenuItem, popupMenu!.addMenuItem(0-id, demoProgramName!))
+                    menuItem!.setCallback(BBjAPI.ON_POPUP_ITEM_SELECT, #this!, "demoProgramMenuItemSelected")
+                    id = id + 1 
+                wend
+
+                #mbRunDemo!.setDropdownMenu(popupMenu!)
+            endif
+
+            #mbRunDemo!.setEnabled(1)
+        else
+            #mbRunDemo!.setText("Demo.bbj")
+            #mbRunDemo!.removeDropdownMenu()
+            #mbRunDemo!.setEnabled(0)
+        endif
+    methodend
+
+    method public void demoProgramMenuItemSelected(BBjPopupSelectEvent event!)
+        declare BBjMenuItem menuItem!
+        menuItem! = cast(BBjMenuItem, event!.getMenuItem())
+
+        #runDemoProgram(menuItem!.getText())
+    methodend
+
+    method public void demoProgramButtonPush(BBjButtonPushEvent event!)
+        declare BBjMenuButton menuButton!
+        menuButton! = cast(BBjMenuButton, event!.getControl())
+
+        #runDemoProgram(menuButton!.getText())
+    methodend
+
+    method public void runDemoProgram(String demoProgramName!)
+        declare InstalledBBjPlugin installledPlugin!
+        installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
+
+        if(installedPlugin! = null()) then
+            print "error"
+            methodret
+        endif
+
+        declare HashMap map!
+        map! = new HashMap()
+        map!.put(installedPlugin!, demoProgramName!)
+
+        bbjapi().postCustomEvent(PluginManagerUI.getRUN_DEMO_PROGRAM(), map!)
     methodend
 
     rem /**

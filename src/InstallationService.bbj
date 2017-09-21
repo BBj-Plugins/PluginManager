@@ -94,6 +94,7 @@ class public InstallationService
         installedPlugin!.setVersion(remotePlugin!.getVersion())
         installedPlugin!.setUpdateAvailable(Boolean.FALSE)
         installedPlugin!.setLastChangedDate(tag!.getLastChangeDate())
+        installedPlugin!.setProjectURL(remotePlugin!.getProjectURL())
 
         installedPlugin!.setTag(tag!.clone())
 
@@ -103,6 +104,7 @@ class public InstallationService
         declare JsonObject jsonObject!
         jsonObject! = new JsonObject()
         jsonObject!.addProperty("id", installedPlugin!.getID().intValue())
+        jsonObject!.addProperty("project_url", installedPlugin!.getProjectURL())
 
         declare SimpleDateFormat sdf!
         sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
@@ -161,7 +163,7 @@ class public InstallationService
         methodret installedPlugin!
     methodend
 
-    method public void uninstallBBjPlugin(InstalledBBjPlugin installedPlugin!)
+    method public void uninstallPlugin(InstalledBBjPlugin installedPlugin!)
         #deleteDirectory(installedPlugin!.getInstallationDirectory())
     methodend
 
