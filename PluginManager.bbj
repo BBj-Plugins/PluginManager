@@ -4,6 +4,7 @@ use java.util.Base64
 use java.util.HashMap
 use java.util.Iterator
 use java.util.ArrayList
+use java.lang.StringBuilder
 
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
@@ -31,7 +32,7 @@ class public PluginManager
 
     field private File pluginsHome!
     field private File pluginManagerDirectory!
-    
+
     field private AuthenticationService authService!
 
     field private ArrayList remotePlugins!
@@ -46,7 +47,7 @@ class public PluginManager
     method public PluginManager()
         #pluginManagerLauncher! = new PluginManagerLauncher()
         #pluginsHome! = #pluginManagerLauncher!.getPluginsHome()
-        
+
         #authService! = new AuthenticationService()
 
         #pluginManagerDirectory! = new File(#pluginsHome!, "PluginManager")
@@ -65,7 +66,7 @@ class public PluginManager
         declare File customPluginListFile!
         customPluginListFile! = new File(#pluginManagerDirectory!, "custom-plugin-list.json")
         #customPluginListHandler! = new CustomPluginListHandler(customPluginListFile!)
-        
+
         if(customPluginListFile!.exists()) then
             declare ArrayList customSourcePluginList!
             customSourcePluginList! = BBjPluginListParser.parse(customPluginListFile!)
@@ -76,12 +77,50 @@ class public PluginManager
                 #remotePlugins!.addAll(customSourcePluginList!)
             endif
         endif
-        
+
         rem Adding the RemoteBBjPlugin objects as dependencies for the installed plugins
         #pluginFolderParser!.addDependencies(#installedPlugins!)
 
         rem mark plugins as installed or not installed depending on the remote plugin list
         #initialisePluginState()
+
+        installedVersion = 0
+        installedVersion = PluginManagerLauncher.getProgramVersion(err=*next)
+
+        incorporatedVersion = 0
+        incorporatedVersion = ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher.getProgramVersion(err=*next)
+
+        if(incorporatedVersion > installedVersion) then
+            declare StringBuilder sb!
+            sb! = new StringBuilder()
+            sb!.append("An update is available for the PluginManagerLauncher.bbj program.")
+            sb!.append("Would you like to perform an update (the currently installed program will be renamed so that you can always perform a rollback) ?")
+            a = msgbox(sb!.toString(), 4)
+
+            if(a = 6) then
+                #updateLauncher()
+            endif
+        endif
+    methodend
+
+    method private void updateLauncher()
+        declare File currentProgramFile!
+        currentProgramFile! = new File(BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj"))
+
+        declare File backupFile!
+        backupFile! = new File(#pluginsHome!, "PluginManagerLauncher_back.bbj")
+        backupFile!.createNewFile()
+        
+        arr! = java.lang.reflect.Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        java.lang.reflect.Array.set(arr!, 0, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
+        java.lang.reflect.Array.set(arr!, 0, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+
+        java.nio.file.Files.move(currentProgramFile!.toPath(), backupFile!.toPath(), arr!)
+
+        declare File newProgramFile!
+        newProgramFile! = new File(#pluginManagerDirectory!, "update/PluginManagerLauncher.bbj")
+
+        java.nio.file.Files.move(newProgramFile!.toPath(), currentProgramFile!.toPath(), arr!)
     methodend
 
     method public void addCustomBBjPluginRepository(String url!, Boolean useCredentials!)
@@ -90,7 +129,7 @@ class public PluginManager
         if(useCredentials!) then
             username! = #authService!.getUsername()
             password! = #authService!.getPassword()
-            
+
             if(username! = null() OR password! = null()) then
                 throw "Unable to verify the Github credentials", 255
             endif
@@ -116,7 +155,7 @@ class public PluginManager
 
         #remotePlugins!.add(remotePlugin!)
     methodend
-    
+
     method public void removeCustomPluginRepository(RemoteBBjPlugin remotePlugin!)
         #customPluginListHandler!.removeCustomPlugin(remotePlugin!.getID())
         #remotePlugins!.remove(remotePlugin!)
@@ -145,11 +184,11 @@ class public PluginManager
     method public Boolean areGithubCredentialsValid()
         username! = #authService!.getUsername()
         password! = #authService!.getPassword()
-        
+
         if(username! = null() OR password! = null()) then
             throw "Unable to verify the Github credentials", 255
         endif
-    
+
         methodret #githubApiService!.areGithubCredentialsValid(username!, password!)
     methodend
 
@@ -166,7 +205,7 @@ class public PluginManager
         if(useCredentials!) then
             username! = #authService!.getUsername()
             password! = #authService!.getPassword()
-            
+
             if(username! = null() OR password! = null()) then
                 throw "Unable to verify the Github credentials", 255
             endif
