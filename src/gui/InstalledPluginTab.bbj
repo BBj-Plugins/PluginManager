@@ -377,7 +377,7 @@ class public InstalledPluginTab
         rem updating the plugin name
         #txtSelectedInstalledPluginName!.setText(installedPlugin!.getName())
 
-        #txtSelectedInstalledPluginProjectURL!.setText(installedPlugin!.getProjectURL())
+        #txtSelectedInstalledPluginProjectURL!.setText(str(installedPlugin!.getProjectURL()))
 
         rem updatig the plugin status
         if(installedPlugin!.isUpdateAvailable()) then
@@ -438,7 +438,7 @@ class public InstalledPluginTab
         rem Enabling the uninstall button
         #btnUninstallPlugin!.setEnabled(1)
     methodend
-    
+
     method private void updateDemoButtonState(InstalledBBjPlugin installedPlugin!)
         rem Enabling the Run demo button if the plugin has a demo program
         if(installedPlugin!.hasDemo()) then
@@ -451,14 +451,14 @@ class public InstalledPluginTab
             else
                 declare Iterator it!
                 it! = demoProgramNameList!.iterator()
-                
+
                 rem Always preselect the Demo.bbj program if present
                 if(demoProgramNameList!.contains("Demo.bbj")) then
                     excludeName! = "Demo.bbj"
                 else
                     excludeName! = str(demoProgramNameList!.get(0))
                 endif
-                
+
                 #mbRunDemo!.setText(excludeName!)
 
                 declare BBjPopupMenu popupMenu!
@@ -469,14 +469,14 @@ class public InstalledPluginTab
                 id = 1
                 while(it!.hasNext())
                     demoProgramName! = cast(String, it!.next())
-                    
+
                     if(demoProgramName! = excludeName!) then
                         continue
                     endif
-                    
+
                     menuItem! = cast(BBjMenuItem, popupMenu!.addMenuItem(0-id, demoProgramName!))
                     menuItem!.setCallback(BBjAPI.ON_POPUP_ITEM_SELECT, #this!, "demoProgramMenuItemSelected")
-                    id = id + 1 
+                    id = id + 1
                 wend
 
                 #mbRunDemo!.setDropdownMenu(popupMenu!)
