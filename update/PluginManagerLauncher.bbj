@@ -18,6 +18,7 @@ use java.lang.Boolean
 
 use java.io.File
 use java.io.FileWriter
+use java.io.FileReader
 use java.io.IOException
 use java.io.InputStream
 use java.io.OutputStream
@@ -49,109 +50,119 @@ class public PluginManagerLauncher
     field private File bbjHome!
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
-    
-    field public static BBjNumber ProgramVersion = 1.01
-    
+
+    field public static BBjNumber ProgramVersion = 1.02
+
     method public PluginManagerLauncher()
         #init()
     methodend
-    
+
     method private void init()
         bbjHomePath! = System.getProperty("basis.BBjHome")
         #bbjHome! = new File(bbjHomePath!)
         if(!#bbjHome!.exists()) then
-           throw "Could not find BBj Home", 255 
+           throw "Could not find BBj Home", 255
         endif
-        
+
         #pluginsHome! = new File(#bbjHome!, "plugins")
         if(!#pluginsHome!.exists()) then
             throw "The plugin folder could not be found", 255
         endif
-        
+
         #proxyConfigurationWindow! = new ProxyConfigurationWindow()
-        
+
         if(!#prefixContainsPluginsDirectory()) then
             declare StringBuilder sb!
             sb! = new StringBuilder()
             sb!.append("The prefix of the current config.bbx file doesn't contain the bbj/plugins directory path." + $0A$)
             sb!.append("Some plugins may not work properly because of this missing prefix entry." + $0A$)
             sb!.append("Do you want to add it?")
-            
+
             a = msgbox(sb!.toString(), 4)
-            
+
             if(a = 6) then
                 #addPluginsDirectoryToThePrefix()
             endif
         endif
     methodend
-    
+
     method public Boolean prefixContainsPluginsDirectory()
         prefixPaths! = pfx
-        
+
         declare BBjVector vect!
         vect! = new BBjVector()
-        
+
         noQuotePrefix! = ""
-        
+
         while(prefixPaths!.contains(""""))
-            firstIndex = prefixPaths!.indexOf("""") 
+            firstIndex = prefixPaths!.indexOf("""")
             lastIndex = prefixPaths!.indexOf("""", firstIndex+1)
-            
+
             vect!.add(prefixPaths!.substring(firstIndex+1, lastIndex))
             noQuotePrefix! = noQuotePrefix! + prefixPaths!.substring(0, firstIndex)
             prefixPaths! = prefixPaths!.substring(lastIndex+1)
-            
+
             if(!prefixPaths!.isEmpty())
                 prefixPaths! = prefixPaths!.trim()
             endif
         wend
-        
+
         noQuotePrefix! = noQuotePrefix! + prefixPaths!
         vect!.addAll(Arrays.asList(noQuotePrefix!.split(" ")))
-        
+
         declare File directory!
 
         declare Iterator it!
         it! = vect!.iterator()
-        
+
         while(it!.hasNext())
             directory! = new File(cast(String, it!.next()))
-            
+
             if(directory!.equals(#pluginsHome!)) then
                 methodret Boolean.TRUE
             endif
         wend
-        
+
         methodret Boolean.FALSE
     methodend
-    
+
     method public void addPluginsDirectoryToThePrefix()
-        ch = unt 
-        open(ch) BBjAPI().getConfig().getConfigFileName()
-        
+        declare File configFile!
+        configFile! = new File(BBjAPI().getConfig().getConfigFileName())
+
+        declare FileReader fileReader!
+        fileReader! = new FileReader(configFile!)
+
+        declare BufferedReader reader!
+        reader! = new BufferedReader(fileReader!)
+
         declare StringBuilder sb!
         sb! = new StringBuilder()
-        
-        while(Boolean.TRUE)
-            read(ch, err=*break) line$
-            if(len(line$) > 8 AND cvs(line$(1,7),4) = "PREFIX ") then
-                sb!.append(line$(1,7) + """" + #pluginsHome!.getAbsolutePath() + File.separator + """ " + line$(8))
+
+        line! = reader!.readLine()
+        while(line! <> null())
+            if(len(line!) > 8 AND cvs(line!.substring(0,7),4) = "PREFIX ") then
+                sb!.append(line!.substring(0,7) + """" + #pluginsHome!.getAbsolutePath() + File.separator + """ " + line!.substring(7))
             else
-                sb!.append(line$)
+                sb!.append(line!)
             endif
             sb!.append($0A$)
+
+            line! = reader!.readLine()
         wend
-        close(ch)
-        
+
+        reader!.close()
+
+        ch = unt 
         open(ch, mode="o_trunc") BBjAPI().getConfig().getConfigFileName()
         write(ch)sb!.toString()
         close(ch)
     methodend
-    
+
     method public File getPluginsHome()
         methodret #pluginsHome!
     methodend
-    
+
     rem /**
     rem  * Returns true if the PluginManager plugin is already installed in the
     rem  * bbj/plugins/ folder, false otherwise.
@@ -163,61 +174,61 @@ class public PluginManagerLauncher
             rem TODO Set valid message & Error number
             throw "The bbj/plugins directory could not be found", 255
         endif
-        
+
         declare BBjVector fileList!
         fileList! = new BBjVector(Arrays.asList(#pluginsHome!.listFiles()))
-        
+
         declare Iterator it!
         it! = fileList!.iterator()
-        
+
         declare File currentFile!
         while(it!.hasNext())
             currentFile! = cast(File, it!.next())
-            
+
             if(currentFile!.getName().equals("PluginManager")) then
                 methodret Boolean.TRUE
             endif
         wend
-        
+
         methodret Boolean.FALSE
     methodend
 
     rem /**
     rem  * Installs the PluginManager into the bbj/plugins/ folder.
     rem  */
-    method public void installPluginManager() 
+    method public void installPluginManager()
         pluginManagerDownloadURL$ = "https://github.com/BBj-Plugins/PluginManager/archive/master.zip"
-        
+
         pluginInstalled! = #installPlugin(pluginManagerDownloadURL$, "PluginManager")
 
         if(!pluginInstalled!) then
             a = msgbox("The PluginManager could not be downloaded / installed. Please try again later or contact BASIS Support.")
             release
         endif
-        
+
         declare File pluginManagerDirectory!
         pluginManagerDirectory! = new File(str(#pluginsHome!) + File.separator + "PluginManager")
-        
+
         if(!pluginManagerDirectory!.exists()) then
             throw "The Plugin Manager could not be downloaded. Please try again later.", 255
         endif
 
         declare File installJsonFile!
         installJsonFile! = new File(pluginManagerDirectory!, "install.json")
-        
+
         declare JsonObject jsonObject!
         jsonObject! = new JsonObject()
-        
+
         jsonObject!.addProperty("last_change", #getTimestamp())
-        
+
         declare FileWriter fileWriter!
         fileWriter! = new FileWriter(installJsonFile!)
         fileWriter!.write(jsonObject!.toString())
         fileWriter!.close()
-        
+
         installJsonFile!.createNewFile()
     methodend
-    
+
     rem /**
     rem  * Downloads the zip archive from the given url, and extracts it to the bbj/plugins folder
     rem  * 
@@ -230,56 +241,56 @@ class public PluginManagerLauncher
 
         declare URLConnection connection!
         connection! = url!.openConnection()
-        
+
         methodret #installPlugin(connection!, projectName!)
     methodend
-    
+
     method public Boolean installPlugin(URLConnection connection!, String projectName!)
         declare File zipFile!
         zipFile! = File.createTempFile(projectName!,".zip")
-        
+
         rem Downloads the zip file into the provided location
         #downloadFile(connection!, zipFile!)
-        
+
         rem check if the file was downloaded
         rem if the file lenght is 0, it was not downloaded
         if(zipFile!.length() = 0) then
             declare Proxy proxy!
             declare BBjThinClient thinClient!
             thinClient! = bbjapi().getThinClient()
-            
+
             proxyPort! = thinClient!.getUserProperty("PluginManager_ProxyPort", err=*next)
             proxyHostname! = thinClient!.getUserProperty("PluginManager_ProxyHostname", err=*next)
-            proxyTypeString! = thinClient!.getUserProperty("PluginManager_ProxyType", err=*next)            
-            
+            proxyTypeString! = thinClient!.getUserProperty("PluginManager_ProxyType", err=*next)
+
             if(proxyHostname! <> "" AND proxyTypeString! <> "" AND proxyPort! <> "") then
                 port = num(proxyPort!)
-                
+
                 if(proxyTypeString! = "DIRECT") then
                     proxyType! = Proxy.Type.DIRECT
                 endif
-                
+
                 if(proxyTypeString! = "HTTP") then
                     proxyType! = Proxy.Type.HTTP
                 endif
-                
+
                 if(proxyTypeString! = "SOCKS") then
                     proxyType! = Proxy.Type.SOCKS
                 endif
-            
+
                 proxy! = new Proxy(proxyType!, new InetSocketAddress(hostname!, port!), err=*next)
             endif
-            
+
             if(proxy! <> null()) then
                 rem trying again to download the zip using the saved proxy settings 
                 #downloadFile(connection!.getURL().openConnection(proxy!), zipFile!)
             endif
-            
+
             rem if no settings were saved or the file could not be downloaded
             if(zipFile!.length() = 0) then
                 declare StringBuilder sb!
                 cancelProxySettings! = Boolean.FALSE
-                
+
                 while(zipFile!.length() = 0 AND !cancelProxySettings!)
                     if(proxy! = null()) then
                         sb! = new StringBuilder()
@@ -296,20 +307,20 @@ class public PluginManagerLauncher
                         sb!.append("Proxy Port: " + str(cast(InetSocketAddress, proxy!.address()).getPort()) + $0A$)
                         sb!.append("Would you like to adapt those settings ?")
                     endif
-                    
+
                     a = msgbox(sb!.toString(), 4)
-                    
+
                     if(a <> 6) then
                         cancelProxySettings! = Boolean.TRUE
                         break
                     else
                         #proxyConfigurationWindow!.open()
-                        
+
                         if(!#proxyConfigurationWindow!.dialogCanceled()) then
                             hostname! = #proxyConfigurationWindow!.getHostName()
                             port = #proxyConfigurationWindow!.getPort()
                             proxyType! = #proxyConfigurationWindow!.getProxyType()
-                    
+
                             proxy! = new Proxy(proxyType!, new InetSocketAddress(hostname!, port!))
                         else
                             cancelProxySettings! = Boolean.TRUE
@@ -317,47 +328,47 @@ class public PluginManagerLauncher
                         endif
                     endif
                 wend
-                
+
                 rem Downloads the zip file into the provided location
                 #downloadFile(connection!.getURL().openConnection(proxy!), zipFile!)
             endif
         endif
-        
+
         rem if the file was not downloaded, return
         if(zipFile!.length() = 0) then
             rem deletes the zip file
             zipFile!.delete()
-            
+
             methodret Boolean.FALSE
         endif
-        
+
         if(proxy! <> null()) then
             declare BBjThinClient thinClient!
             thinClient! = bbjapi().getThinClient()
-            
+
             thinClient!.setUserProperty("PluginManager_ProxyPort", str(cast(InetSocketAddress, proxy!.address()).getPort()))
             thinClient!.setUserProperty("PluginManager_ProxyHostname", cast(InetSocketAddress, proxy!.address()).getHostName())
-            thinClient!.setUserProperty("PluginManager_ProxyType", proxy!.type().toString())       
+            thinClient!.setUserProperty("PluginManager_ProxyType", proxy!.type().toString())
         endif
-        
+
         rem unzips the zip file to the given directory
         #unzipArchive(zipFile!, new File(#pluginsHome!, projectName!))
-        
+
         rem deletes the zip file
         zipFile!.delete()
-        
+
         methodret Boolean.TRUE
     methodend
-    
+
     method public String getTimestamp()
         declare SimpleDateFormat sdf!
-        
+
         sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
         sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        
+
         methodret sdf!.format(new java.util.Date()) + " GMT"
     methodend
-    
+
     rem /**
     rem  * Donwload the file from the given URL and stores its content 
     rem  * in the given file.
@@ -369,10 +380,10 @@ class public PluginManagerLauncher
         seterr downloadFile_ErrorHandler
             declare OutputStream outputStream!
             outputStream! = new BufferedOutputStream(new FileOutputStream(outputFile!))
-            
+
             declare InputStream inputStream!
             inputStream! = connection!.getInputStream()
-                        
+
             rem Hack to create a byte[1024] in BBj
             declare ByteArrayOutputStream bos!
             bos! = new ByteArrayOutputStream(1024)
@@ -380,7 +391,7 @@ class public PluginManagerLauncher
                 bos!.write(0)
             next i
             bytes! = bos!.toByteArray()
-            
+
             rem reading from the input stream(=URL)
             byteRead = inputStream!.read(bytes!)
             while (byteRead <> -1)
@@ -388,14 +399,14 @@ class public PluginManagerLauncher
                 outputStream!.write(bytes!, 0, byteRead)
                 byteRead = inputStream!.read(bytes!)
             wend
-        
+
         downloadFile_ErrorHandler:
             rem closing the streams
             inputStream!.close(err=*next)
             outputStream!.close(err=*next)
             bos!.close(err=*next)
     methodend
-    
+
     rem /**
     rem  * Unzips the given zip archive into the given output folder.
     rem  * 
@@ -404,7 +415,7 @@ class public PluginManagerLauncher
     rem  */ 
     method public void unzipArchive(File zipFile!, File outputFolder!)
         seterr unzipArchive_ErrorHandler
-        
+
             rem Hack to create a byte[1024] in BBj
             declare ByteArrayOutputStream bos!
             bos! = new ByteArrayOutputStream(1024)
@@ -412,67 +423,67 @@ class public PluginManagerLauncher
                 bos!.write(0)
             next i
             bytes! = bos!.toByteArray()
-            
+
             declare ZipInputStream zipInputStream!
             zipInputStream! = new ZipInputStream(new FileInputStream(zipFile!))
-            
+
             declare ZipEntry zipEntry!
             zipEntry! = zipInputStream!.getNextEntry()
-    
+
             while(zipEntry! <> null())
                 fileName! = zipEntry!.getName()
-                
+
                 rem removing the github folder name since we are using a custom folder
                 fileName! = fileName!.substring(fileName!.indexOf("/")+1)
-                
+
                 newFile! = new File(outputFolder!.getAbsolutePath() + File.separator + fileName!)
                 print "unzip: " + str(fileName!)
-                
+
                 new File(newFile!.getParent()).mkdirs()
-                
+
                 byteRead = zipInputStream!.read(bytes!)
-                
+
                 rem First checking to avoid creating files instead of folders
                 if(byteRead > 0) then
                     fos! = new FileOutputStream(newFile!)
-                
+
                     while(byteRead > 0)
                         fos!.write(bytes!, 0, byteRead)
                         byteRead = zipInputStream!.read(bytes!)
                     wend
-                 
+
                     fos!.close()
                 endif
-                
+
                 zipEntry! = zipInputStream!.getNextEntry()
             wend
 
         unzipArchive_ErrorHandler:
             zipInputStream!.closeEntry(err=*next)
             zipInputStream!.close(err=*next)
-        
+
             bos!.close(err=*next)
     methodend
-    
+
     rem /**
     rem  * Returns true if a newer version of the Package Manager plugin 
     rem  * is available, false otherwise.
     rem  */
     method public Boolean isPluginManagerUpdateAvailable()
-        ch = unt 
+        ch = unt
         open(ch) str(#pluginsHome!) + File.separator + "PluginManager" + File.separator + "install.json"
         read record(ch, siz=1024) json$
         close(ch)
-        
+
         declare JsonParser jsonParser!
         jsonParser! = new JsonParser()
-        
+
         declare JsonObject jsonObject!
-        jsonObject! = jsonParser!.parse(json$).getAsJsonObject() 
-        
+        jsonObject! = jsonParser!.parse(json$).getAsJsonObject()
+
         methodret #isBBjPluginUpdateAvailable("https://api.github.com/repos/BBj-Plugins/PluginManager", jsonObject!.get("last_change"))
     methodend
-    
+
     method public Boolean isBBjPluginUpdateAvailable(String apiURL!, String lastChange!)
         url! = new URL(apiURL!)
 
@@ -481,53 +492,53 @@ class public PluginManagerLauncher
         connection!.setRequestProperty("Accept", "appliation/json")
         connection!.setRequestProperty("Accept","v3")
         rem connection!.setRequestProperty("If-Modified-Since", lastChange!)
-         
+
         response = connection!.getResponseCode()
         rem check if not modified
         if(response = 304) then
             methodret Boolean.FALSE
         endif
-        
-        if(response <> 200) then 
+
+        if(response <> 200) then
             throw "The Server returned an unknown return code", 255
         endif
-        
+
         declare JsonParser jsonParser!
         jsonParser! = new JsonParser()
-        
+
         declare JsonReader jsonReader!
         jsonReader!  = new JsonReader(new InputStreamReader(connection!.getInputStream()))
-        
+
         declare JsonObject jsonObject!
         jsonObject! = jsonParser!.parse(jsonReader!).getAsJsonObject()
-        
+
         remoteLastChanged! = jsonObject!.get("pushed_at").getAsString()
-        
+
         declare SimpleDateFormat sdf!
-        
+
         rem 2017-08-10T13:10:07Z
         remoteLastChanged! = remoteLastChanged!.replaceAll("T", " ")
         remoteLastChanged! = remoteLastChanged!.replaceAll("Z", "")
-        
+
         sdf! = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ENGLISH)
         sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        
+
         declare java.util.Date remoteLastChangedDate!
         remoteLastChangedDate! = sdf!.parse(remoteLastChanged!)
-        
+
         sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
         sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-        
+
         methodret remoteLastChangedDate!.after(sdf!.parse(lastChange!))
     methodend
-    
+
     rem /**
     rem  * Updates the locally installed PluginManager BBj Plugin.
     rem  */
     method public void updatePluginManager()
         #installPluginManager()
     methodend
-    
+
 classend
 
 class public ProxyConfigurationWindow
@@ -535,7 +546,7 @@ class public ProxyConfigurationWindow
     field private BBjNumber port
     field private String hostname!
     field private Proxy.Type proxyType!
-    
+
     field private BBjInputN inpnPort!
     field private BBjInputE inpeHostname!
     field private Boolean dialogCanceled!
@@ -543,19 +554,19 @@ class public ProxyConfigurationWindow
     field private BBjListButton lbProxyType!
 
     method public ProxyConfigurationWindow()
-    methodend 
-    
+    methodend
+
     method private void init()
         declare BBjSysGui sysGui!
         sysGui! = BBjAPI().openSysGui("X0")
-        
+
         context = sysGui!.getAvailableContext()
         #window! = sysGui!.addWindow(200, 200, 275, 150, "Proxy Configuration", $00000012$)
         #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
-        
+
         id = #window!.getAvailableControlID()
         #window!.addStaticText(id, 10, 15, 75, 20, "Proxy Type: ", $8000$)
-        
+
         id = #window!.getAvailableControlID()
         #lbProxyType! = #window!.addListButton(id, 95, 15-4, 150, 20, "")
         #lbProxyType!.addItem("DIRECT")
@@ -563,54 +574,54 @@ class public ProxyConfigurationWindow
         #lbProxyType!.addItem("SOCKS")
         #lbProxyType!.selectIndex(0)
         #lbProxyType!.setSize(150,100)
-        
+
         id = #window!.getAvailableControlID()
         #window!.addStaticText(id, 10, 45, 75, 20, "Hostname: ", $8000$)
-        
+
         id = #window!.getAvailableControlID()
         #inpeHostname! = #window!.addInputE(id, 95, 45-4, 150, 20, "")
-        
+
         id = #window!.getAvailableControlID()
         #window!.addStaticText(id, 10, 75, 75, 20, "Port: ", $8000$)
-        
+
         id = #window!.getAvailableControlID()
         #inpnPort! = #window!.addInputN(id, 95, 75-4, 150, 20, "")
-        
+
         declare BBjButton btnOK!
         id = #window!.getAvailableControlID()
         btnOK! = #window!.addButton(id, 55, 115, 100, 25, "OK")
         btnOK!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "performOK")
-        
+
         declare BBjButton btnCancel!
         id = #window!.getAvailableControlID()
         btnCancel! = #window!.addButton(id, 165, 115, 100, 25, "Cancel")
         btnCancel!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "performCancel")
     methodend
-    
+
     method public Boolean dialogCanceled()
         methodret #dialogCanceled!
     methodend
-    
+
     method public void performOK(BBjButtonPushEvent event!)
         #hostname! = #inpeHostname!.getText()
         #port = num(#inpnPort!.getText())
-        
+
         proxyType! = #lbProxyType!.getItemAt(#lbProxyType!.getSelectedIndex())
         if(proxyType! = "DIRECT") then
             #proxyType! = Proxy.Type.DIRECT
         endif
-        
+
         if(proxyType! = "HTTP") then
             #proxyType! = Proxy.Type.HTTP
         endif
-        
+
         if(proxyType! = "SOCKS") then
             #proxyType! = Proxy.Type.SOCKS
         endif
-        
+
         #close(#window!)
     methodend
-    
+
     method public void performCancel(BBjButtonPushEvent event!)
         #dialogCanceled! = Boolean.TRUE
         #close(#window!)
@@ -623,41 +634,41 @@ class public ProxyConfigurationWindow
     method public BBjNumber getPort()
         methodret #port
     methodend
-    
+
     method public Proxy.Type getProxyType()
         methodret #proxyType!
     methodend
-    
+
     method public void open()
         if(#window! = null()) then
             #init()
             bbjapi().setCustomEventCallback("CloseProxyConfiguratioWindowEvent", "endOpen")
         endif
-        
+
         #resetContent()
-        
+
         #window!.setVisible(1)
-        
+
         process_events
-        
+
         endOpen:
     methodend
-    
+
     method private void resetContent()
         #hostname! = null()
         #port = 0
         #proxyType! = null()
-        
+
         #inpeHostname!.setText("")
         #inpnPort!.setText("")
         #lbProxyType!.selectIndex(0)
     methodend
-    
+
     method private void close(BBjTopLevelWindow window!)
         window!.setVisible(0)
         bbjapi().postCustomEvent("CloseProxyConfiguratioWindowEvent", "")
     methodend
-    
+
     method public void closeWindow(BBjCloseEvent event!)
         #dialogCanceled! = Boolean.TRUE
         #close(cast(BBjTopLevelWindow, event!.getControl()))
