@@ -151,6 +151,7 @@ class public PluginManagerLauncher
             line! = reader!.readLine()
         wend
 
+        fileReader!.close()
         reader!.close()
 
         ch = unt 
