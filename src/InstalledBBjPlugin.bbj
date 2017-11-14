@@ -25,6 +25,9 @@ class public InstalledBBjPlugin extends BBjPlugin
     rem The boolean value indicating whether this plugin has a Demo program or not
     field private boolean hasDemo!
     
+    rem the field indicating whether the plugin has at least one configuration program
+    field private boolean hasConfigurationProgram!
+    
     rem the installation directory of the plugin
     field private File installationDirectory!
     
@@ -33,6 +36,7 @@ class public InstalledBBjPlugin extends BBjPlugin
     method public InstalledBBjPlugin()
         #updateAvailable! = Boolean.FALSE
         #hasDemo! = Boolean.FALSE
+        #hasConfigurationProgram! = Boolean.FALSE
     methodend
     
     method public void setProjectURL(String projectURL!)
@@ -91,12 +95,42 @@ class public InstalledBBjPlugin extends BBjPlugin
         methodret #installationDate!
     methodend
     
+    rem /**
+    rem  * Sets the given Tag as this plugin's Tag.
+    rem  * 
+    rem  * @param tag! The Tag to set.
+    rem  */
     method public void setTag(Tag tag!)
         #tag! = tag!
     methodend
     
+    rem /**
+    rem  * Returns the Tag of this plugin.
+    rem  * 
+    rem  * @return the Tag of this plugin.
+    rem  */
     method public Tag getTag()
         methodret #tag!
+    methodend
+    
+    rem /**
+    rem  * Sets the given boolean value as the plugin's hasConfigurationProgram flag.
+    rem  * This flag is used to determine if the plugin has or has not a configuration program.
+    rem  * 
+    rem  * @param hasConfigurationProgram! The boolean value to set.
+    rem  */
+    method public void setHasConfigurationProgram(boolean hasConfigurationProgram!)
+        #hasConfigurationProgram! = hasConfigurationProgram!
+    methodend
+    
+    rem /**
+    rem  * Returns the boolean value indicating whether the plugin has a configuration program or not. 
+    rem  * True is returned if it has a configuration program, else false is returned.
+    rem  * 
+    rem  * @return the boolean value indication whether the plugin has a configuration program or not.
+    rem  */
+    method public Boolean hasConfigurationProgram()
+        methodret #hasConfigurationProgram!
     methodend
     
 classend

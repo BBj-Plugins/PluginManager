@@ -26,6 +26,7 @@ class public PluginManagerUI
     field public static String INSTALL_PLUGIN_REQUEST!   = "INSTALL_PLUGIN_REQUEST"
     field public static String UPDATE_PLUGIN_REQUEST!    = "UPDATE_PLUGIN_REQUEST"
     field public static String UNINSTALL_PLUGIN_REQUEST! = "UNINSTALL_PLUGIN_REQUEST"
+    field public static String RUN_CONFIGURATION_PROGRAM! = "RUN_CONFIGURATION_PROGRAM"
 
     field private PluginManager pluginManager!
 
@@ -105,8 +106,18 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
         bbjapi().setCustomEventCallback(#RUN_DEMO_PROGRAM!, #this!, "runDemoProgram")
         bbjapi().setCustomEventCallback(#ADD_CUSTOM_PLUGIN!, #this!, "addCustomPlugin")
         bbjapi().setCustomEventCallback(#REMOVE_CUSTOM_PLUGIN!, #this!, "removeCustomRemotePlugin")
+        bbjapi().setCustomEventCallback(#RUN_CONFIGURATION_PROGRAM!, #this!, "runConfigurationProgram")
 
         #sysGui!.setRepaintEnabled(1)
+    methodend
+    
+    method public void runConfigurationProgram(BBjCustomEvent event!)
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = cast(InstalledBBjPlugin, event!.getObject())
+        
+        rem TODO - If the plugin can have multiple configuration programs pass the selected one
+        
+        #pluginManager!.runConfigurationProgram(installedPlugin!, "configure.bbj")
     methodend
 
     method public void removeCustomRemotePlugin(BBjCustomEvent event!)

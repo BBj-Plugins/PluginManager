@@ -205,9 +205,38 @@ class public InstalledPluginFolderParser
 
         jsonFileReader!.close()
 
+        #setHasConfigurationProgram(installedPlugin!)
         #setHasDemo(installedPlugin!)
 
         methodret installedPlugin!
+    methodend
+    
+    rem /**
+    rem  * Parses the given installed plugin's home directory for a plugin configuration 
+    rem  * program located in a cfg/ folder. If the plugin has such a program its "hasConfigurationProgram"
+    rem  * will be set to true.
+    rem  * 
+    rem  * @param installedPlugin! The plugin whose home directory will be searched.
+    rem  */
+    method public void setHasConfigurationProgram(InstalledBBjPlugin installedPlugin!)
+        if(installedPlugin! = null()) then
+            methodret
+        endif
+    
+        rem Checking if the plugin has a cfg folder
+        declare File cfgFolder!
+        cfgFolder! = new File(installedPlugin!.getInstallationDirectory(), "cfg")
+
+        if(!cfgFolder!.exists()) then
+            methodret 
+        endif
+        
+        declare File configurationFile! 
+        configurationFile! = new File(cfgFolder!, "configure.bbj")
+
+        if(configurationFile!.exists()) then
+            installedPlugin!.setHasConfigurationProgram(Boolean.TRUE)
+        endif
     methodend
     
     method public void addDependencies(ArrayList installedPluginList!)

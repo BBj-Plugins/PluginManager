@@ -478,7 +478,23 @@ class public PluginManager
     method public void runDemo(InstalledBBjPlugin installedPlugin!, String demoProgramName!)
         command! = argv(0) + " -q " + installedPlugin!.getInstallationDirectory().toString() + File.separator + "Demo" + File.separator + demoProgramName!
         print "launching: " + command!
-        a = scall(command!)
+        a = scall(command! + " &")
+    methodend
+    
+    rem /**
+    rem  * Runs the given plugin's configuration program with the given name.
+    rem  * 
+    rem  * @param installedPlugin! The installed plugin whose configuration program will be run
+    rem  * @param configProgramName! The name of the configuration program to run     
+    rem  */
+    method public void runConfigurationProgram(InstalledBBjPlugin installedPlugin!, String configProgramName!)
+        if(!installedPlugin!.hasConfigurationProgram()) then
+            methodret
+        endif
+        
+        command! = argv(0) + " -q " + installedPlugin!.getInstallationDirectory().toString() + File.separator + "cfg" + File.separator + configProgramName!
+        print "launching: " + command!
+        a = scall(command! + " &")
     methodend
 
     method public Boolean hasDependencies(Tag tag!)

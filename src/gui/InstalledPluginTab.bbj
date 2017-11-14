@@ -15,6 +15,8 @@ class public InstalledPluginTab
     field private ArrayList pluginList!
 
     field private BBjMenuButton mbRunDemo!
+    field private BBjButton btnRunConfiguration! 
+    
     field private BBjButton btnUpdatePlugin!
     field private BBjButton btnUninstallPlugin!
     field private BBjChildWindow cwdInstalledPlugins!
@@ -44,6 +46,7 @@ class public InstalledPluginTab
         row_y = 10
         control_width = 150
         control_height = 25
+        
         rem displaying the control on the right side
         row_x = cw_width - control_width - space
         cw_next_id = childWindow!.getAvailableControlID()
@@ -51,7 +54,16 @@ class public InstalledPluginTab
         #mbRunDemo!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "demoProgramButtonPush")
         #mbRunDemo!.setBorderPainted(Boolean.TRUE)
         #mbRunDemo!.setEnabled(0)
-        row_x = row_x + cntrol_width+ space
+        
+        control_width = 150
+        control_height = 25
+        row_x = row_x - control_width - space
+        cw_next_id = childWindow!.getAvailableControlID()
+        #btnRunConfiguration! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Configure")) 
+        #btnRunConfiguration!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runConfigurationButtonPush")
+        #btnRunConfiguration!.setToolTipText("Runs the Plug-in's Configuration program (cfg/configure.bbj)")
+        
+        rem row_x = row_x + cntrol_width+ space
         row_y = row_y + control_height + space
 
         rem new row
@@ -268,6 +280,24 @@ class public InstalledPluginTab
         #btnUninstallPlugin!.setEnabled(0)
     methodend
 
+    rem /**
+    rem  * The callback for the "Run Configuration Program" button. 
+    rem  * 
+    rem  * @param event! The event issued when the user clicks the button.
+    rem  */
+    method public void runConfigurationButtonPush(BBjButtonPushEvent event!)
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
+
+        if(installedPlugin! = null()) then
+            rem TODO - Add a valid error message
+            print "Error"
+            methodret
+        endif
+
+        bbjapi().postCustomEvent(PluginManagerUI.getRUN_CONFIGURATION_PROGRAM(), installedPlugin!)
+    methodend
+
     method public void updateTabEntries(ArrayList pluginList!)
         declare BBjVector vect!
         vect! = new BBjVector()
@@ -432,11 +462,23 @@ class public InstalledPluginTab
         endif
 
         #updateDemoButtonState(installedPlugin!)
+        #updateConfigureButtonState(installedPlugin!)
 
         #updateInstalledPluginInformation()
 
         rem Enabling the uninstall button
         #btnUninstallPlugin!.setEnabled(1)
+    methodend
+    
+    rem /**
+    rem  * Uses the information of the given installed bbj plugin to enable or disable
+    rem  * the "Run Configuration Program" button. If the gievn installed plugin has a configuration
+    rem  * program located in its home/cfg/ folder the button will be enabled, otherwise it will be disabled.
+    rem  * 
+    rem  * @param installedPlugin! The installed plugin used to determine the state of the button.
+    rem  */
+    method public void updateConfigureButtonState(InstalledBBjPlugin installedPlugin!)
+        #btnRunConfiguration!.setEnabled(installedPlugin!.hasConfigurationProgram())
     methodend
 
     method private void updateDemoButtonState(InstalledBBjPlugin installedPlugin!)
