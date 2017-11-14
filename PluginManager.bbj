@@ -339,6 +339,7 @@ class public PluginManager
             installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
         endif
 
+        #pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
         #pluginFolderParser!.setHasDemo(installedPlugin!)
         #installedPlugins!.add(installedPlugin!)
 

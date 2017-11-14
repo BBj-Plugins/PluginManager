@@ -61,7 +61,7 @@ class public InstalledPluginTab
         cw_next_id = childWindow!.getAvailableControlID()
         #btnRunConfiguration! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Configure")) 
         #btnRunConfiguration!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runConfigurationButtonPush")
-        #btnRunConfiguration!.setToolTipText("Runs the Plug-in's Configuration program (cfg/configure.bbj)")
+        #btnRunConfiguration!.setToolTipText("Runs the Plugin's Configuration program (cfg/configure.bbj)")
         
         rem row_x = row_x + cntrol_width+ space
         row_y = row_y + control_height + space
