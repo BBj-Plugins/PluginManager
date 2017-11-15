@@ -15,12 +15,15 @@ class public InstalledPluginTab
     field private ArrayList pluginList!
 
     field private BBjMenuButton mbRunDemo!
-    field private BBjButton btnRunConfiguration! 
-    
+    field private BBjButton btnRunConfiguration!
+
     field private BBjButton btnUpdatePlugin!
     field private BBjButton btnUninstallPlugin!
     field private BBjChildWindow cwdInstalledPlugins!
     field private BBjStandardGrid grdPlugins!
+
+    field private BBjNumber btnWidth  = 150
+    field private BBjNumber ctrlSpace = 10
 
     field private BBjStaticText txtSelectedInstalledPluginName!
     field private BBjStaticText txtSelectedInstalledPluginStatus!
@@ -30,6 +33,7 @@ class public InstalledPluginTab
     field private BBjStaticText txtSelectedInstalledPluginInstallDate!
     field private BBjStaticText txtSelectedInstalledPluginDependecies!
     field private BBjStaticText txtSelectedInstalledPluginBBjDependency!
+    field private BBjStaticText txtSelectedInstalledPluginDocumentationURL!
 
     method public InstalledPluginTab(BBjTopLevelWindow window!, BBjNumber windowWidth, BBjNumber windowHeight, BBjSysGui sysGui!)
         #sysGui! = sysGui!
@@ -38,31 +42,34 @@ class public InstalledPluginTab
     methodend
 
     method private void init(BBjChildWindow childWindow!)
-        space = 10
+        #sysGui!.setRepaintEnabled(0)
+        space = #ctrlSpace
         cw_width = childWindow!.getWidth()
         cw_height = childWindow!.getHeight()
 
         row_x = 10
         row_y = 10
-        control_width = 150
+        control_width = #btnWidth
         control_height = 25
-        
+
         rem displaying the control on the right side
         row_x = cw_width - control_width - space
         cw_next_id = childWindow!.getAvailableControlID()
-        #mbRunDemo! = cast(BBjMenuButton, childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "Demo.bbj", $0001$))
+        rem disabled + invisible
+        #mbRunDemo! = cast(BBjMenuButton, childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "Demo.bbj", $0011$))
         #mbRunDemo!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "demoProgramButtonPush")
         #mbRunDemo!.setBorderPainted(Boolean.TRUE)
         #mbRunDemo!.setEnabled(0)
-        
-        control_width = 150
+
+        control_width = #btnWidth
         control_height = 25
         row_x = row_x - control_width - space
         cw_next_id = childWindow!.getAvailableControlID()
-        #btnRunConfiguration! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Configure")) 
+        rem disbaled + Invisible
+        #btnRunConfiguration! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Configure", $0011$))
         #btnRunConfiguration!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runConfigurationButtonPush")
         #btnRunConfiguration!.setToolTipText("Runs the Plugin's Configuration program (cfg/configure.bbj)")
-        
+
         rem row_x = row_x + cntrol_width+ space
         row_y = row_y + control_height + space
 
@@ -126,7 +133,7 @@ class public InstalledPluginTab
         control_width = 125
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Name: ")
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Name: ")
         row_x = row_x + control_width + space
 
         control_width = 150
@@ -157,7 +164,7 @@ class public InstalledPluginTab
         control_width = 125
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Project URL: ")
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Project URL: ")
         row_x = row_x + control_width + space
 
         control_width = 300
@@ -197,7 +204,7 @@ class public InstalledPluginTab
         control_width = 125
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Description: ")
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Description: ")
         row_x = row_x + control_width + space
 
         control_width = column2_x - 8*space - row_x
@@ -219,6 +226,28 @@ class public InstalledPluginTab
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtSelectedInstalledPluginInstallDate! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
+        row_x = row_x + control_width + space
+        row_y = row_y + control_height + space
+
+        row_x = column1_x
+        control_width = 125
+        control_height = 20
+        cw_next_id = childWindow!.getAvailableControlID()
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Documentation URL: ")
+        row_x = row_x + control_width + space
+
+        control_width = 300
+        control_height = 20
+        cw_next_id = childWindow!.getAvailableControlID()
+        #txtSelectedInstalledPluginDocumentationURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
+        #txtSelectedInstalledPluginDocumentationURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
+        #txtSelectedInstalledPluginDocumentationURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
+
+        cw_next_id = childWindow!.getAvailableControlID()
+        btnOpenPluginDocumentationURL! = childWindow!.addButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
+        btnOpenPluginDocumentationURL!.setOpaque(0)
+        btnOpenPluginDocumentationURL!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginDocumentationURLButtonPush")
+
         row_x = row_x + control_width + space
         row_y = row_y + control_height + space
 
@@ -250,7 +279,7 @@ class public InstalledPluginTab
         control_width = 150
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Dependencies: ")
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Plugin Dependencies: ")
         row_x = row_x + control_width + space
 
         control_width = 150
@@ -278,6 +307,27 @@ class public InstalledPluginTab
         #btnUninstallPlugin! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Uninstall"))
         #btnUninstallPlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "uninstallPlugin")
         #btnUninstallPlugin!.setEnabled(0)
+        
+        #sysGui!.setRepaintEnabled(1)
+    methodend
+
+    rem /**
+    rem  * The callback for the hidden button used to open the plugin's documentation page
+    rem  * when the user thinks that he clicked on the documentation URL.
+    rem  * 
+    rem  * @param event! The event issued when the user clicks on the hidden button. 
+    rem  */
+    method public void pluginDocumentationURLButtonPush(BBjButtonPushEvent event!)
+        declare InstalledBBjPlugin installedPlugin!
+        installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
+
+        if(installedPlugin! = null()) then
+            rem display error 
+            methodret
+        endif
+
+        if(installedPlugin!.getTag().getDocumentationURL() <> null() AND !installedPlugin!.getTag().getDocumentationURL().isEmpty())
+        bbjapi().getThinClient().browse(installedPlugin!.getTag().getDocumentationURL())
     methodend
 
     rem /**
@@ -290,8 +340,7 @@ class public InstalledPluginTab
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
 
         if(installedPlugin! = null()) then
-            rem TODO - Add a valid error message
-            print "Error"
+            rem Nothing is selected, do nothing
             methodret
         endif
 
@@ -326,7 +375,6 @@ class public InstalledPluginTab
 
         #grdPlugins!.setSelectedCell(0,0)
         #installedPluginGridRowSelected(null())
-        #updateInstalledPluginInformation()
     methodend
 
     method public InstalledBBjPlugin getInstalledPlugin(BBjNumber id)
@@ -387,8 +435,8 @@ class public InstalledPluginTab
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
 
+        rem no plugin selected - do nothing
         if(installedPlugin! = null()) then
-            print "Error"
             methodret
         endif
 
@@ -399,8 +447,18 @@ class public InstalledPluginTab
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
 
+        rem no plugin selected - Reset the values
         if(installedPlugin! = null()) then
-            rem TODO reset the values
+            #txtSelectedInstalledPluginName!.setText("")
+            #txtSelectedInstalledPluginProjectURL!.setText("")
+            #txtSelectedInstalledPluginStatus!.setText("")
+            #txtSelectedInstalledPluginStatus!.setBackColor(#txtSelectedInstalledPluginName!.getBackColor())
+            #txtSelectedInstalledPluginDescription!.setText("")
+            #txtSelectedInstalledPluginVersionName!.setText("")
+            #txtSelectedInstalledPluginInstallDate!.setText("")
+            #txtSelectedInstalledPluginBBjDependency!.setText("")
+            #txtSelectedInstalledPluginDocumentationURL!.setText("")
+            #txtSelectedInstalledPluginDependecies!.setText("")
             methodret
         endif
 
@@ -422,6 +480,12 @@ class public InstalledPluginTab
         #txtSelectedInstalledPluginVersionName!.setText(installedPlugin!.getTag().getName())
         #txtSelectedInstalledPluginInstallDate!.setText(PluginManagerUI.getDisplayDate(installedPlugin!.getInstallationDate()))
         #txtSelectedInstalledPluginBBjDependency!.setText(installedPlugin!.getTag().getBBjDependency())
+
+        if(installedPlugin!.getTag().getDocumentationURL() <> null()) then
+            #txtSelectedInstalledPluginDocumentationURL!.setText(installedPlugin!.getTag().getDocumentationURL())
+        else
+            #txtSelectedInstalledPluginDocumentationURL!.setText("")
+        endif
 
         declare StringBuilder sb!
         sb! = new StringBuilder()
@@ -448,9 +512,16 @@ class public InstalledPluginTab
     method public void installedPluginGridRowSelected(BBjGridSelectRowEvent event!)
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
+        
+        #sysGui!.setRepaintEnabled(Boolean.FALSE)
 
         if(installedPlugin! = null()) then
-            rem TODO reset the values
+            #updateDemoButtonState(null())
+            #updateConfigureButtonState(null())
+            #updateInstalledPluginInformation()
+            #btnUninstallPlugin!.setEnabled(0)
+            
+            #sysGui!.setRepaintEnabled(Boolean.TRUE)
             methodret
         endif
 
@@ -464,12 +535,33 @@ class public InstalledPluginTab
         #updateDemoButtonState(installedPlugin!)
         #updateConfigureButtonState(installedPlugin!)
 
+        rem display / hide the buttons and reorder them
+        if(#mbRunDemo!.isEnabled()) then
+            #mbRunDemo!.setVisible(Boolean.TRUE)
+            if(#btnRunConfiguration!.isEnabled()) then
+                #btnRunConfiguration!.setLocation(#mbRunDemo!.getX()-#ctrlSpace-#btnWidth, #mbRunDemo!.getY())
+                #btnRunConfiguration!.setVisible(Boolean.TRUE)
+            else
+                #btnRunConfiguration!.setVisible(Boolean.FALSE)
+            endif
+        else
+            #mbRunDemo!.setVisible(Boolean.FALSE)
+            if(#btnRunConfiguration!.isEnabled()) then
+                #btnRunConfiguration!.setLocation(#mbRunDemo!.getX(), #mbRunDemo!.getY())
+                #btnRunConfiguration!.setVisible(Boolean.TRUE)
+            else
+                #btnRunConfiguration!.setVisible(Boolean.FALSE)
+            endif
+        endif
+
         #updateInstalledPluginInformation()
 
         rem Enabling the uninstall button
         #btnUninstallPlugin!.setEnabled(1)
+        
+        #sysGui!.setRepaintEnabled(Boolean.TRUE)
     methodend
-    
+
     rem /**
     rem  * Uses the information of the given installed bbj plugin to enable or disable
     rem  * the "Run Configuration Program" button. If the gievn installed plugin has a configuration
@@ -478,10 +570,32 @@ class public InstalledPluginTab
     rem  * @param installedPlugin! The installed plugin used to determine the state of the button.
     rem  */
     method public void updateConfigureButtonState(InstalledBBjPlugin installedPlugin!)
+        rem no plugin passed, disable the button
+        if(installedPlugin! = null()) then
+            #btnRunConfiguration!.setEnabled(Boolean.FALSE)
+            methodret
+        endif
+
         #btnRunConfiguration!.setEnabled(installedPlugin!.hasConfigurationProgram())
     methodend
 
+    rem /**
+    rem  * Changes the state of the "Run Demo" button based on the values of the given
+    rem  * installed plugin object. If the given object has multiple demo programs the "Run Demo" button
+    rem  * will have a dropdown with all these programs. If it has a single demo program the button won't have 
+    rem  * a drop down. If the plugin has no demos, the button will be disabled.
+    rem  * 
+    rem  * @param installedPlugin! The plugin used to change the state of the "Run Demo" button.
+    rem  */
     method private void updateDemoButtonState(InstalledBBjPlugin installedPlugin!)
+        rem No plugin passed, reset the button's values and disable it
+        if(installedPlugin! = null()) then
+            #mbRunDemo!.setText("Demo.bbj")
+            #mbRunDemo!.removeDropdownMenu()
+            #mbRunDemo!.setEnabled(0)
+            methodret
+        endif
+
         rem Enabling the Run demo button if the plugin has a demo program
         if(installedPlugin!.hasDemo()) then
             declare ArrayList demoProgramNameList!
@@ -551,7 +665,7 @@ class public InstalledPluginTab
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
 
         if(installedPlugin! = null()) then
-            print "error"
+            rem Nothing is selected do nothing
             methodret
         endif
 

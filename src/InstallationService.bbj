@@ -55,15 +55,15 @@ class public InstallationService
         #pluginManagerLauncher! = new PluginManagerLauncher()
         #localPluginDirectory! = #pluginManagerLauncher!.getPluginsHome()
     methodend
-    
+
     method public InstalledBBjPlugin installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
         methodret #installPlugin(remotePlugin!, tag!, null(), null())
     methodend
-    
+
     method public InstalledBBjPlugin installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!, String username!, String password!)
         downloadURL! = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
         projectName! = remotePlugin!.getName()
-        
+
         declare File pluginDirectory!
         pluginDirectory! = new File(#localPluginDirectory!, projectName!)
 
@@ -73,14 +73,14 @@ class public InstallationService
             declare GithubApiService service!
             service! = new GithubApiService()
             authToken! = service!.getAuthToken(username!, password!)
-            
+
             declare URLConnection connection!
             connection! = service!.getConnection(new URL(url$) , authToken!)
             #pluginManagerLauncher!.installPlugin(connection!, remotePlugin!.getName())
         else
             #pluginManagerLauncher!.installPlugin(url$, remotePlugin!.getName())
         endif
-        
+
         remotePlugin!.setInstalled(Boolean.TRUE)
 
         declare InstalledBBjPlugin installedPlugin!
@@ -123,6 +123,7 @@ class public InstallationService
         endif
 
         jsonTagObject!.addProperty("tag_name", tag!.getName())
+        jsonTagObject!.addProperty("documentation_url", tag!.getDocumentationURL(), err=*next)
         jsonTagObject!.addProperty("last_change", sdf!.format(tag!.getLastChangeDate()))
 
         if(!tag!.getPluginDependencyMap().isEmpty()) then

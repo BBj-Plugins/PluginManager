@@ -22,7 +22,7 @@ class public BBjPluginListParser
         if(!pluginListFile!.exists()) then
             throw "Missing file bbj-plugin-list.json. Re-run the PluginManagerLauncher to update your installation.", 255
         endif
-    
+
         declare ArrayList remotePlugins!
         remotePlugins! = new ArrayList()
 
@@ -31,13 +31,13 @@ class public BBjPluginListParser
 
         declare JsonArray jsonArray!
         jsonArray! = jsonParser!.parse(new FileReader(pluginListFile!)).getAsJsonArray()
-        
+
         declare Iterator it!
         it! = jsonArray!.iterator()
 
         declare JsonObject jsonObject!
         declare RemoteBBjPlugin remotePlugin!
-        
+
         rem The HashMap used to store the Plugins and the JsonArray describing the plugin's dependencies
         rem The map is parsed at last in order to set the correct dependencies for each plugin
         declare HashMap dependencyMap!
@@ -48,12 +48,12 @@ class public BBjPluginListParser
             remotePlugin! = #getRemotePlugin(jsonObject!, dependencyMap!)
             remotePlugins!.add(remotePlugin!)
         wend
-        
+
         #addDependencies(dependencyMap!, remotePlugins!)
-        
+
         methodret remotePlugins!
     methodend
-    
+
     method private static RemoteBBjPlugin getRemotePlugin(JsonObject jsonObject!, HashMap dependencyMap!)
         declare Tag tag!
         declare ArrayList tagList!
@@ -62,66 +62,70 @@ class public BBjPluginListParser
         declare JsonObject tagJsonObject!
         declare RemoteBBjPlugin remotePlugin!
         declare Iterator tagJsonArrayIterator!
-        
+
         rem 2017-08-10T13:10:07Z
         sdf! = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ENGLISH)
         sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-    
+
         remotePlugin! = new RemoteBBjPlugin()
-            
+
         remotePlugin!.setID(jsonObject!.get("id").getAsInt())
         remotePlugin!.setName(jsonObject!.get("name").getAsString())
         remotePlugin!.setDescription(jsonObject!.get("description").getAsString())
-            
+
         remotePlugin!.setProjectURL(jsonObject!.get("project_url").getAsString())
         remotePlugin!.setApiURL(jsonObject!.get("api_url").getAsString())
         remotePlugin!.setDownloadURL(jsonObject!.get("download_url").getAsString())
         remotePlugin!.setAuthor(jsonObject!.get("author").getAsString())
-        
+
         if(jsonObject!.has("password_required")) then
             remotePlugin!.setPasswordRequired(jsonObject!.get("password_required").getAsBoolean())
         endif
-        
+
         if(jsonObject!.has("tags")) then
             tagJsonArray! = jsonObject!.get("tags").getAsJsonArray()
             tagJsonArrayIterator! = tagJsonArray!.iterator()
-            
+
             tagList! = new ArrayList()
             while(tagJsonArrayIterator!.hasNext())
                 tagJsonObject! = cast(JsonObject, tagJsonArrayIterator!.next())
-                
+
                 if(tagJsonObject!.has("tag_name")) then
                     tag! = new Tag()
                     tag!.setName(tagJsonObject!.get("tag_name").getAsString())
-                    
+
                     if(tagJsonObject!.has("last_change")) then
                         lastChange! = tagJsonObject!.get("last_change").getAsString()
-        
+
                         lastChange! = lastChange!.replaceAll("T", " ")
                         lastChange! = lastChange!.replaceAll("Z", "")
-        
+
                         tag!.setLastChangeDate(sdf!.parse(lastChange!))
                     endif
-                    
+
+                    if(tagJsonObject!.has("documentation_url")) then
+                        tag!.setDocumentationURL(tagJsonObject!.get("documentation_url").getAsString())
+                    endif
+
                     if(tagJsonObject!.has("bbj_dependency")) then
                         tag!.setBBjDependency(tagJsonObject!.get("bbj_dependency").getAsString())
                     endif
-                    
+
                     if(tagJsonObject!.has("plugin_dependencies") AND tagJsonObject!.get("plugin_dependencies").isJsonArray()) then
                         dependencyMap!.put(tag!, tagJsonObject!.get("plugin_dependencies").getAsJsonArray())
                     endif
-                    
+
                     tagList!.add(tag!)
                 endif
             wend
-            
+
             remotePlugin!.setTagList(tagList!)
         endif
-        
+
         methodret remotePlugin!
     methodend
-    
-    
+
+
     rem /**
     rem  * 
     rem  * @param jsonObject! The json object to parse 
@@ -133,12 +137,12 @@ class public BBjPluginListParser
 
         declare RemoteBBjPlugin remotePlugin!
         remotePlugin! = #getRemotePlugin(jsonObject!, dependencyMap!)
-        
+
         #addDependencies(dependencyMap!, remoteBBjPluginList!)
-        
+
         methodret remotePlugin!
     methodend
-    
+
     rem /**
     rem  *  
     rem  * 
@@ -147,63 +151,63 @@ class public BBjPluginListParser
     method private static void addDependencies(HashMap dependencyMap!, ArrayList remotePluginList!)
         declare Iterator dependencyMapIterator!
         dependencyMapIterator! = dependencyMap!.entrySet().iterator()
-        
+
         declare Tag tag!
         declare RemoteBBjPlugin plugin!
         declare HashMap dependencyHashMap!
         declare JsonArray dependenciesJsonArray!
         declare JsonObject dependencyJsonObject!
         declare Iterator dependencyJsonArrayIterator!
-        
+
         while(dependencyMapIterator!.hasNext())
             entry! = dependencyMapIterator!.next()
-            
+
             tag! = cast(Tag, entry!.getKey())
             dependenciesJsonArray! = cast(JsonArray, entry!.getValue())
             dependencyHashMap! = new HashMap()
-            
+
             dependencyJsonArrayIterator! = dependenciesJsonArray!.iterator()
             while(dependencyJsonArrayIterator!.hasNext())
                 dependencyJsonObject! = cast(JsonObject, dependencyJsonArrayIterator!.next())
-                
+
                 if(!dependencyJsonObject!.has("plugin_name")) then
                     throw "Missing dependency property: plugin_name", 255
                 endif
-                
+
                 if(!dependencyJsonObject!.has("plugin_version")) then
                     throw "Missing dependency property: plugin_version", 255
                 endif
-                
+
                 if(!dependencyJsonObject!.has("project_url")) then
                     throw "Missing dependency property: project_url", 255
                 endif
-                
+
                 pluginName! = dependencyJsonObject!.get("plugin_name").getAsString()
                 tagName! = dependencyJsonObject!.get("plugin_version").getAsString()
                 pluginProjectURL! = dependencyJsonObject!.get("project_url").getAsString()
-                
+
                 plugin! = cast(RemoteBBjPlugin, #getPlugin(pluginName!, remotePluginList!))
-                
+
                 if(plugin! = null()) then
                     throw "Unable to resolve dependency: " + plugin_name!, 255
                 endif
-                
+
                 if(!plugin!.getProjectURL().equals(pluginProjectURL!)) then
                     throw "Unable to resolbe dependency for project URL: " + pluginProjectURL!, 255
                 endif
-                
+
                 if(!plugin!.hasTag(tagName!)) then
                     throw "Unknown dependency version tag: " + tagName!, 255
                 endif
-                
+
                 rem the plugin and the tag need to be saved 
                 dependencyHashMap!.put(plugin!, plugin!.getTag(tagName!))
             wend
-            
+
             tag!.setPluginDependencyMap(dependencyHashMap!)
-        wend 
+        wend
     methodend
-    
+
     method private static RemoteBBjPlugin getPlugin(String name!, ArrayList pluginList!)
         declare Iterator it!
         it! = pluginList!.iterator()
@@ -220,5 +224,5 @@ class public BBjPluginListParser
 
         methodret null()
     methodend
-    
+
 classend

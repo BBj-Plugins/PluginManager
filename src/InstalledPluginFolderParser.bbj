@@ -23,7 +23,7 @@ class public InstalledPluginFolderParser
 
     field private static PluginManager pluginManager!
     field private static HashMap dependencyMap!
-    
+
     method public InstalledPluginFolderParser(PluginManager pluginManager!)
         #pluginManager! = pluginManager!
     methodend
@@ -165,7 +165,7 @@ class public InstalledPluginFolderParser
         if(jsonObject!.has("id")) then
             installedPlugin!.setID(jsonObject!.get("id").getAsInt())
         endif
-        
+
         if(jsonObject!.has("project_url")) then
             installedPlugin!.setProjectURL(jsonObject!.get("project_url").getAsString())
         endif
@@ -189,6 +189,10 @@ class public InstalledPluginFolderParser
                 tag!.setName(jsonTagObject!.get("tag_name").getAsString())
             endif
 
+            if(jsonTagObject!.has("documentation_url")) then
+                tag!.setDocumentationURL(jsonTagObject!.get("documentation_url").getAsString())
+            endif
+
             if(jsonTagObject!.has("last_change")) then
                 tag!.setLastChangeDate(sdf!.parse(jsonTagObject!.get("last_change").getAsString()))
             endif
@@ -210,7 +214,7 @@ class public InstalledPluginFolderParser
 
         methodret installedPlugin!
     methodend
-    
+
     rem /**
     rem  * Parses the given installed plugin's home directory for a plugin configuration 
     rem  * program located in a cfg/ folder. If the plugin has such a program its "hasConfigurationProgram"
@@ -222,23 +226,23 @@ class public InstalledPluginFolderParser
         if(installedPlugin! = null()) then
             methodret
         endif
-    
+
         rem Checking if the plugin has a cfg folder
         declare File cfgFolder!
         cfgFolder! = new File(installedPlugin!.getInstallationDirectory(), "cfg")
 
         if(!cfgFolder!.exists()) then
-            methodret 
+            methodret
         endif
-        
-        declare File configurationFile! 
+
+        declare File configurationFile!
         configurationFile! = new File(cfgFolder!, "configure.bbj")
 
         if(configurationFile!.exists()) then
             installedPlugin!.setHasConfigurationProgram(Boolean.TRUE)
         endif
     methodend
-    
+
     method public void addDependencies(ArrayList installedPluginList!)
         if(#dependencyMap! = null() OR #dependencyMap!.isEmpty()) then
             methodret
@@ -275,7 +279,7 @@ class public InstalledPluginFolderParser
                     jsonObject! = cast(JsonObject, jsonArrayIterator!.next())
 
                     remotePlugin! = cast(RemoteBBjPlugin, #pluginManager!.getRemotePlugin(jsonObject!.get("plugin_name").getAsString()))
-                    
+
                     tag! = remotePlugin!.getTag(jsonObject!.get("plugin_version").getAsString())
 
                     dMap!.put(remotePlugin!, tag!)
@@ -287,5 +291,5 @@ class public InstalledPluginFolderParser
             endif
         wend
     methodend
-    
+
 classend

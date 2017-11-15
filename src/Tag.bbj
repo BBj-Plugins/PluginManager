@@ -7,6 +7,9 @@ class public Tag
     field private String bbjDependency!
     field private java.util.Date lastChange!
     field private HashMap pluginDependencyMap!
+    
+    rem the url of the plugin documentation for this tag
+    field private String documentationURL!
 
     rem /**
     rem  * Class constructor. Creates an empty Tag object.
@@ -15,6 +18,24 @@ class public Tag
         #bbjDependency! = ""
         #pluginDependencyMap! = new HashMap()
         #isMaster! = Boolean.FALSE
+    methodend
+    
+    rem /**
+    rem  * Sets the given string as this tag's documentation url.
+    rem  * 
+    rem  * @param url! the url to set as documentation url.
+    rem  */
+    method public void setDocumentationURL(String url!)
+        #documentationURL! = url!
+    methodend
+    
+    rem /**
+    rem  * Returns this tag's documentation URL.
+    rem  * 
+    rem  * @return this tag's documentation URL.
+    rem  */
+    method public String getDocumentationURL()
+        methodret #documentationURL!
     methodend
     
     method public void setBBjDependency(String dependency!)
@@ -94,6 +115,7 @@ class public Tag
         tag!.setLastChangeDate(cast(java.util.Date, #lastChange!.clone()))
         tag!.setBBjDependency(#bbjDependency!)
         tag!.setPluginDependencyMap(cast(HashMap, #pluginDependencyMap!.clone()))
+        tag!.setDocumentationURL(#documentationURL!)
         
         methodret tag!
     methodend

@@ -40,6 +40,8 @@ class public RemotePluginTab
     rem  * Initializes the window with it's controls
     rem  */
     method private void init(BBjChildWindow childWindow!)
+        #sysGui!.setRepaintEnabled(0)
+    
         cw_width = childWindow!.getWidth()
         cw_height = childWindow!.getHeight()
 
@@ -269,6 +271,8 @@ class public RemotePluginTab
         #btnInstallPlugin!.setEnabled(0)
 
         bbjapi().setCustomEventCallback(PluginManagerUI.getINSTALL_PLUGIN_END(), #this!, "installPluginEnd")
+        
+        #sysGui!.setRepaintEnabled(1)
     methodend
 
     method public void installPluginStart(BBjCustomEvent event!)
@@ -495,8 +499,16 @@ class public RemotePluginTab
         declare RemoteBBjPlugin remotePlugin!
         remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(num(pluginID!)))
 
+        rem reset the information if no plugin is selected
         if(remotePlugin! = null()) then
-            rem TODO reset the field entries
+            #txtPluginStatus!.setText("")
+            #txtPluginName!.setText("")
+            #txtPluginDescription!.setText("")
+            #txtPluginProjectURL!.setText("")
+            #txtPluginVersionName!.setText("")
+            #txtPluginBBjDependency!.setText("")
+            #txtPluginVersionDate!.setText("")
+            #txtPluginDependecies!.setText("")
             methodret
         endif
 
