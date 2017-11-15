@@ -61,7 +61,7 @@ class public PluginManagerUI
 
         screen_width = screenBounds!.getWidth()
         screen_height = screenBounds!.getHeight()
-        #window! = #sysGui!.addWindow(100, (screen_width/2 - window_width/2), (screen_height/2 - window_height/2), window_width, window_height, "Plugin Manager", $00000002$)
+        #window! = #sysGui!.addWindow(100, (screen_width/2 - window_width/2), (screen_height/2 - window_height/2), window_width, window_height, "Plugin Manager", $00000082$)
         #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
 
         window_next_id = #window!.getAvailableControlID()
