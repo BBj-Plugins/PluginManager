@@ -493,7 +493,8 @@ class public PluginManager
             methodret
         endif
         
-        command! = argv(0) + " -q " + installedPlugin!.getInstallationDirectory().toString() + File.separator + "cfg" + File.separator + configProgramName!
+        pluginDirectory! = installedPlugin!.getInstallationDirectory().toString() + File.separator + "cfg"
+        command! = argv(0) + " -q " + "-WD" + pluginDirectory! + " " + configProgramName!
         print "launching: " + command!
         a = scall(command! + " &")
     methodend
