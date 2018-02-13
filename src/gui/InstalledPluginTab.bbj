@@ -130,7 +130,7 @@ class public InstalledPluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 125
+        control_width = 135
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Name: ")
@@ -145,7 +145,7 @@ class public InstalledPluginTab
         rem Column 2
         row_x = column2_x
 
-        control_width = 100
+        control_width = 150
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Status")
@@ -161,13 +161,13 @@ class public InstalledPluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 125
+        control_width = 135
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Project URL: ")
         row_x = row_x + control_width + space
 
-        control_width = 300
+        control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtSelectedInstalledPluginProjectURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
@@ -185,7 +185,7 @@ class public InstalledPluginTab
         rem new column
         row_x = column2_x
 
-        control_width = 100
+        control_width = 150
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Installed Version: ")
@@ -200,43 +200,14 @@ class public InstalledPluginTab
 
         rem new row
         row_x = column1_x
-
-        control_width = 125
-        control_height = 20
-        cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Description: ")
-        row_x = row_x + control_width + space
-
-        control_width = column2_x - 8*space - row_x
-        control_height = 60
-        cw_next_id = childWindow!.getAvailableControlID()
-        #txtSelectedInstalledPluginDescription! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
-        row_x = row_x + control_width + space
-
-        rem new column
-        row_x = column2_x
-
-        control_width = 100
-        control_height = 20
-        cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Install Date: ")
-        row_x = row_x + control_width + space
-
-        control_width = 150
-        control_height = 20
-        cw_next_id = childWindow!.getAvailableControlID()
-        #txtSelectedInstalledPluginInstallDate! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
-        row_x = row_x + control_width + space
-        row_y = row_y + control_height + space
-
-        row_x = column1_x
-        control_width = 125
+        
+        control_width = 135
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Documentation URL: ")
         row_x = row_x + control_width + space
 
-        control_width = 300
+        control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtSelectedInstalledPluginDocumentationURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
@@ -248,12 +219,43 @@ class public InstalledPluginTab
         btnOpenPluginDocumentationURL!.setOpaque(0)
         btnOpenPluginDocumentationURL!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginDocumentationURLButtonPush")
 
+        rem new column
+        row_x = column2_x
+
+        control_width = 150
+        control_height = 20
+        cw_next_id = childWindow!.getAvailableControlID()
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Install Date: ")
+        row_x = row_x + control_width + space
+
+        control_width = 150
+        control_height = 20
+        cw_next_id = childWindow!.getAvailableControlID()
+        #txtSelectedInstalledPluginInstallDate! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
+        row_x = row_x + control_width + space
+        row_y = row_y + control_height + space
+        
+        rem new row
+        row_x = column1_x
+
+        control_width = 135
+        control_height = 20
+        cw_next_id = childWindow!.getAvailableControlID()
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Description: ")
+        row_x = row_x + control_width + space
+        
+        control_width = column2_x - 8*space - row_x
+        control_height = 60
+        cw_next_id = childWindow!.getAvailableControlID()
+        #txtSelectedInstalledPluginDescription! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
+        row_x = row_x + control_width + space
+
         row_x = row_x + control_width + space
         row_y = row_y + control_height + space
 
         rem new row
         row_x = column1_x
-        row_y = row_y + space *4
+        row_y = row_y + space
         control_width = 200
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
@@ -261,13 +263,13 @@ class public InstalledPluginTab
         txt!.setFont(#sysGui!.makeFont(txt!.getFont().getName(), 10, #sysGui!.BOLD + #sysGui!.UNDERLINE))
         row_y = row_y + control_height + space
 
-        control_width = 150
+        control_width = 200
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Revision Dependency: ")
         row_x = row_x + control_width + space
 
-        control_width = 150
+        control_width = 200
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtSelectedInstalledPluginBBjDependency! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
@@ -276,13 +278,13 @@ class public InstalledPluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 150
+        control_width = 200
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Plugin Dependencies: ")
         row_x = row_x + control_width + space
 
-        control_width = 150
+        control_width = 200
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtSelectedInstalledPluginDependecies! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")

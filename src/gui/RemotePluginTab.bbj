@@ -125,7 +125,7 @@ class public RemotePluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 125
+        control_width = 150
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Name: ")
@@ -140,7 +140,7 @@ class public RemotePluginTab
         rem Column 2
         row_x = column2_x
 
-        control_width = 100
+        control_width = 125
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Status")
@@ -156,13 +156,13 @@ class public RemotePluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 125
+        control_width = 150
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Project URL: ")
         row_x = row_x + control_width + space
 
-        control_width = 300
+        control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtPluginProjectURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
@@ -180,10 +180,10 @@ class public RemotePluginTab
         rem new column
         row_x = column2_x
 
-        control_width = 100
+        control_width = 125
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Last Version: ")
+        childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Latest Version: ")
         row_x = row_x + control_width + space
 
         control_width = 150
@@ -196,7 +196,7 @@ class public RemotePluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 125
+        control_width = 150
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Description: ")
@@ -211,7 +211,7 @@ class public RemotePluginTab
         rem new column
         row_x = column2_x
 
-        control_width = 100
+        control_width = 125
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Version Timestamp: ")
@@ -222,7 +222,7 @@ class public RemotePluginTab
         cw_next_id = childWindow!.getAvailableControlID()
         #txtPluginVersionDate! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
         row_x = row_x + control_width + space
-        row_y = row_y + control_height + space
+        row_y = row_y + 60 + space
 
         rem new row
         row_x = column1_x
@@ -234,7 +234,7 @@ class public RemotePluginTab
         txt!.setFont(#sysGui!.makeFont(txt!.getFont().getName(), 10, #sysGui!.BOLD + #sysGui!.UNDERLINE))
         row_y = row_y + control_height + space
 
-        control_width = 150
+        control_width = 175
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Revision Dependency: ")
@@ -249,7 +249,7 @@ class public RemotePluginTab
         rem new row
         row_x = column1_x
 
-        control_width = 150
+        control_width = 175
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Dependencies: ")
