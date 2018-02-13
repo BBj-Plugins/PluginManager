@@ -23,12 +23,13 @@ class public RemotePluginTab
     rem The Plugin Information fields displayed below the grid
     field private BBjStaticText txtPluginName!
     field private BBjStaticText txtPluginStatus!
-    field private BBjStaticText txtPluginProjectURL!
     field private BBjStaticText txtPluginDescription!
     field private BBjStaticText txtPluginVersionName!
     field private BBjStaticText txtPluginVersionDate!
     field private BBjStaticText txtPluginDependecies!
     field private BBjStaticText txtPluginBBjDependency!
+    
+    field private BBjMenuButton btnPluginProjectURL!
 
     method public RemotePluginTab(BBjTopLevelWindow window!, BBjNumber windowWidth, BBjNumber windowHeight, BBjSysGui sysGui!)
         #sysGui! = sysGui!
@@ -162,20 +163,19 @@ class public RemotePluginTab
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "BBj Plugin Project URL: ")
         row_x = row_x + control_width + space
 
+        declare BBjFont defaultFont!
+        defaultFont! = #txtPluginStatus!.getFont()
+
         control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #txtPluginProjectURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
-
-        declare BBjFont defaultFont!
-        defaultFont! = #txtPluginProjectURL!.getFont()
-        #txtPluginProjectURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
-        #txtPluginProjectURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
-
-        cw_next_id = childWindow!.getAvailableControlID()
-        btn! = childWindow!.addButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
-        btn!.setOpaque(0)
-        btn!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginProjectURLButtonPush")
+        #btnPluginProjectURL! = childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "")
+        #btnPluginProjectURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
+        #btnPluginProjectURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
+        #btnPluginProjectURL!.setOpaque(0)
+        #btnPluginProjectURL!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginProjectURLButtonPush")
+        #btnPluginProjectURL!.setBorderPainted(0)
+        #btnPluginProjectURL!.setAlignment(#sysGui!.ALIGN_LEFT)
 
         rem new column
         row_x = column2_x
@@ -504,7 +504,7 @@ class public RemotePluginTab
             #txtPluginStatus!.setText("")
             #txtPluginName!.setText("")
             #txtPluginDescription!.setText("")
-            #txtPluginProjectURL!.setText("")
+            #btnPluginProjectURL!.setText("")
             #txtPluginVersionName!.setText("")
             #txtPluginBBjDependency!.setText("")
             #txtPluginVersionDate!.setText("")
@@ -521,7 +521,7 @@ class public RemotePluginTab
 
         #txtPluginName!.setText(remotePlugin!.getName())
         #txtPluginDescription!.setText(remotePlugin!.getDescription())
-        #txtPluginProjectURL!.setText(remotePlugin!.getProjectURL())
+        #btnPluginProjectURL!.setText(remotePlugin!.getProjectURL())
 
         declare Tag tag!
         declare ArrayList tagList!

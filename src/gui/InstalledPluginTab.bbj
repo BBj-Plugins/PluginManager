@@ -24,16 +24,17 @@ class public InstalledPluginTab
 
     field private BBjNumber btnWidth  = 150
     field private BBjNumber ctrlSpace = 10
+    
+    field private BBjMenuButton btnPluginProjectURL!
+    field private BBjMenuButton btnPluginDocumentationURL!
 
     field private BBjStaticText txtSelectedInstalledPluginName!
     field private BBjStaticText txtSelectedInstalledPluginStatus!
-    field private BBjStaticText txtSelectedInstalledPluginProjectURL!
     field private BBjStaticText txtSelectedInstalledPluginDescription!
     field private BBjStaticText txtSelectedInstalledPluginVersionName!
     field private BBjStaticText txtSelectedInstalledPluginInstallDate!
     field private BBjStaticText txtSelectedInstalledPluginDependecies!
     field private BBjStaticText txtSelectedInstalledPluginBBjDependency!
-    field private BBjStaticText txtSelectedInstalledPluginDocumentationURL!
 
     method public InstalledPluginTab(BBjTopLevelWindow window!, BBjNumber windowWidth, BBjNumber windowHeight, BBjSysGui sysGui!)
         #sysGui! = sysGui!
@@ -160,6 +161,9 @@ class public InstalledPluginTab
 
         rem new row
         row_x = column1_x
+        
+        declare BBjFont defaultFont!
+        defaultFont! = #txtSelectedInstalledPluginStatus!.getFont()
 
         control_width = 135
         control_height = 20
@@ -170,17 +174,13 @@ class public InstalledPluginTab
         control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #txtSelectedInstalledPluginProjectURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
-
-        declare BBjFont defaultFont!
-        defaultFont! = #txtSelectedInstalledPluginProjectURL!.getFont()
-        #txtSelectedInstalledPluginProjectURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
-        #txtSelectedInstalledPluginProjectURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
-
-        cw_next_id = childWindow!.getAvailableControlID()
-        btn! = childWindow!.addButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
-        btn!.setOpaque(0)
-        btn!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginProjectURLButtonPush")
+        #btnPluginProjectURL! = childWindow!.addMenuButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
+        #btnPluginProjectURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
+        #btnPluginProjectURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
+        #btnPluginProjectURL!.setOpaque(0)
+        #btnPluginProjectURL!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginProjectURLButtonPush")
+        #btnPluginProjectURL!.setBorderPainted(0)
+        #btnPluginProjectURL!.setAlignment(#sysGui!.ALIGN_LEFT)
 
         rem new column
         row_x = column2_x
@@ -210,14 +210,13 @@ class public InstalledPluginTab
         control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #txtSelectedInstalledPluginDocumentationURL! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
-        #txtSelectedInstalledPluginDocumentationURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
-        #txtSelectedInstalledPluginDocumentationURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
-
-        cw_next_id = childWindow!.getAvailableControlID()
-        btnOpenPluginDocumentationURL! = childWindow!.addButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
-        btnOpenPluginDocumentationURL!.setOpaque(0)
-        btnOpenPluginDocumentationURL!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginDocumentationURLButtonPush")
+        #btnPluginDocumentationURL! = childWindow!.addMenuButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
+        #btnPluginDocumentationURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
+        #btnPluginDocumentationURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
+        #btnPluginDocumentationURL!.setOpaque(0)
+        #btnPluginDocumentationURL!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "pluginDocumentationURLButtonPush")
+        #btnPluginDocumentationURL!.setBorderPainted(0)
+        #btnPluginDocumentationURL!.setAlignment(#sysGui!.ALIGN_LEFT)
 
         rem new column
         row_x = column2_x
@@ -452,14 +451,14 @@ class public InstalledPluginTab
         rem no plugin selected - Reset the values
         if(installedPlugin! = null()) then
             #txtSelectedInstalledPluginName!.setText("")
-            #txtSelectedInstalledPluginProjectURL!.setText("")
+            #btnPluginProjectURL!.setText("")
             #txtSelectedInstalledPluginStatus!.setText("")
             #txtSelectedInstalledPluginStatus!.setBackColor(#txtSelectedInstalledPluginName!.getBackColor())
             #txtSelectedInstalledPluginDescription!.setText("")
             #txtSelectedInstalledPluginVersionName!.setText("")
             #txtSelectedInstalledPluginInstallDate!.setText("")
             #txtSelectedInstalledPluginBBjDependency!.setText("")
-            #txtSelectedInstalledPluginDocumentationURL!.setText("")
+            #btnPluginDocumentationURL!.setText("")
             #txtSelectedInstalledPluginDependecies!.setText("")
             methodret
         endif
@@ -467,7 +466,7 @@ class public InstalledPluginTab
         rem updating the plugin name
         #txtSelectedInstalledPluginName!.setText(installedPlugin!.getName())
 
-        #txtSelectedInstalledPluginProjectURL!.setText(str(installedPlugin!.getProjectURL()))
+        #btnPluginProjectURL!.setText(str(installedPlugin!.getProjectURL()))
 
         rem updatig the plugin status
         if(installedPlugin!.isUpdateAvailable()) then
@@ -484,9 +483,9 @@ class public InstalledPluginTab
         #txtSelectedInstalledPluginBBjDependency!.setText(installedPlugin!.getTag().getBBjDependency())
 
         if(installedPlugin!.getTag().getDocumentationURL() <> null()) then
-            #txtSelectedInstalledPluginDocumentationURL!.setText(installedPlugin!.getTag().getDocumentationURL())
+            #btnPluginDocumentationURL!.setText(installedPlugin!.getTag().getDocumentationURL())
         else
-            #txtSelectedInstalledPluginDocumentationURL!.setText("")
+            #btnPluginDocumentationURL!.setText("")
         endif
 
         declare StringBuilder sb!
