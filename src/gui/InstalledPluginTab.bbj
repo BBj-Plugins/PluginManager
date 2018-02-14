@@ -152,7 +152,7 @@ class public InstalledPluginTab
         childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "Status")
         row_x = row_x + control_width + space
 
-        control_width = 90
+        control_width = 120
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
         #txtSelectedInstalledPluginStatus! = childWindow!.addStaticText(cw_next_id, row_x, row_y, control_width, control_height, "")
