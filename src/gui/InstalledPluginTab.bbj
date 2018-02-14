@@ -174,7 +174,7 @@ class public InstalledPluginTab
         control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #btnPluginProjectURL! = childWindow!.addMenuButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
+        #btnPluginProjectURL! = childWindow!.addMenuButton(cw_next_id, row_x, row_y-5, control_width, control_height, "")
         #btnPluginProjectURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
         #btnPluginProjectURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
         #btnPluginProjectURL!.setOpaque(0)
@@ -210,7 +210,7 @@ class public InstalledPluginTab
         control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #btnPluginDocumentationURL! = childWindow!.addMenuButton(cw_next_id, row_x-5, row_y-5, control_width, control_height, "")
+        #btnPluginDocumentationURL! = childWindow!.addMenuButton(cw_next_id, row_x, row_y-5, control_width, control_height, "")
         #btnPluginDocumentationURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
         #btnPluginDocumentationURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
         #btnPluginDocumentationURL!.setOpaque(0)
@@ -327,8 +327,9 @@ class public InstalledPluginTab
             methodret
         endif
 
-        if(installedPlugin!.getTag().getDocumentationURL() <> null() AND !installedPlugin!.getTag().getDocumentationURL().isEmpty())
-        bbjapi().getThinClient().browse(installedPlugin!.getTag().getDocumentationURL())
+        if(installedPlugin!.getTag().getDocumentationURL() <> null() AND !installedPlugin!.getTag().getDocumentationURL().isEmpty()) then
+            bbjapi().getThinClient().browse(installedPlugin!.getTag().getDocumentationURL())
+        endif
     methodend
 
     rem /**

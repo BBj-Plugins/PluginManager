@@ -169,7 +169,7 @@ class public RemotePluginTab
         control_width = column2_x - 8*space - row_x
         control_height = 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #btnPluginProjectURL! = childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "")
+        #btnPluginProjectURL! = childWindow!.addMenuButton(cw_next_id, row_x, row_y-5, control_width, control_height, "")
         #btnPluginProjectURL!.setForeColor(#sysGui!.makeColor(#sysGui!.BLUE))
         #btnPluginProjectURL!.setFont(#sysGui!.makeFont(defaultFont!.getName(), defaultFont!.getSize(), #sysGui!.UNDERLINE))
         #btnPluginProjectURL!.setOpaque(0)
