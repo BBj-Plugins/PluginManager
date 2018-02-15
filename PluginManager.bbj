@@ -103,6 +103,9 @@ class public PluginManager
         endif
     methodend
 
+    rem /**
+    rem  * Updates the PluginManagerLauncher.bbj program by copying the update/PluginManagerLauncher.bbj file
+    rem  */
     method private void updateLauncher()
         declare File currentProgramFile!
         currentProgramFile! = new File(BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj"))
@@ -156,6 +159,11 @@ class public PluginManager
         #remotePlugins!.add(remotePlugin!)
     methodend
 
+    rem /**
+    rem  * Removes the given RemoteBBjPlugin objecct from the list of custom plugin's.
+    rem  * 
+    rem  * @param remotePlugin! The remote plugin to remove from the list
+    rem  */
     method public void removeCustomPluginRepository(RemoteBBjPlugin remotePlugin!)
         #customPluginListHandler!.removeCustomPlugin(remotePlugin!.getID())
         #remotePlugins!.remove(remotePlugin!)
@@ -181,6 +189,11 @@ class public PluginManager
         methodret customPluginList!
     methodend
 
+    rem /**
+    rem  * Returns true if the Github credentials are valid, false otherwise.
+    rem  * 
+    rem  * @return true if the Github credentials are valid, false otherwise.
+    rem  */
     method public Boolean areGithubCredentialsValid()
         username! = #authService!.getUsername()
         password! = #authService!.getPassword()
@@ -192,11 +205,25 @@ class public PluginManager
         methodret #githubApiService!.areGithubCredentialsValid(username!, password!)
     methodend
 
+    rem /**
+    rem  * Sets the given username and password as Github credentials. The given boolean flag is
+    rem  * sed to determine if the credentials should be saved or not. Not savign the credentials makes them
+    rem  * only valid for this session.
+    rem  * 
+    rem  * @param username! The username to use.
+    rem  * @param password! The password to use.
+    rem  * @param saveCredentials! The boolean flag used to determine if the credentials should be saved or not. 
+    rem  */
     method public void setGihubCredentials(String username!, String password!, Boolean saveCredentials!)
         #authService!.setUsername(username!, saveCredentials!)
         #authService!.setPassword(username!, saveCredentials!)
     methodend
 
+    rem /**
+    rem  * Returns true if the Github credentials are saved , false otherwise.
+    rem  * 
+    rem  * @return true if the credentials are saved, false if not.
+    rem  */
     method public Boolean areGithubCredentialsSaved()
         methodret #authService!.isUsernameSaved() OR #authService!.isPasswordSaved()
     methodend
@@ -314,13 +341,16 @@ class public PluginManager
     methodend
 
     rem /**
-    rem  * Installes the BBjPlugin with the given name
+    rem  * Installes the BBjPlugin with the given name.
     rem  * 
     rem  * @param pluginName! The name of the plugin to install
     rem  */
     method public void installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!)
         declare InstalledBBjPlugin installedPlugin!
+        
+        rem check if the plugin is a private repository
         if(remotePlugin!.isPasswordRequired()) then
+            rem Credentials are needed to read from the repository
             username! = bbjapi().getStbl("gitUsername", err=*next)
             password! = bbjapi().getStbl("gitPassword", err=*next)
 
@@ -338,9 +368,59 @@ class public PluginManager
         else
             installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
         endif
+        
+        rem check if the plugin has jar dependencies
+        if(#pluginFolderParser!.hasPluginJarDependencies(installedPlugin!)) then
+            installedPlugin!.setHasJarDependencies(Boolean.TRUE)
+        
+            rem this is a fresh plugin installation, there can't be any classpath with the 
+            rem dependencies. Prompt the user if he wants to create a new SSCP for the plugin
+            
+            declare StringBuilder builder!
+            builder! = new StringBuilder()
+            builder!.append("The installed plugin requires the jars from its dependencies/ folder to be executed properly. ")
+            builder!.append("Do you want to create a new classpath containing all the required .jar files to be able to run the plugin properly ?")
 
-        #pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
+            answer = msgbox(builder!.toString(), 4)
+            if(answer = 6) then
+                declare BBjAdmin admin!
+                admin! = BBjAPI().getAdmin("admin", "admin123")
+                
+                declare BBjVector jarDependencies!
+                jarDependencies! = #pluginFolderParser!.getJarDependencies(installedPlugin!)
+                
+                declare BBjAdminEnvironment env!
+                env! = admin!.getEnvironment()
+                
+                declare BBjVector cpJars!
+                rem check if the classpath with the plugin's name already exists
+                cpJars! = env!.getClasspath(installedPlugin!.getName(), err=*next)
+                
+                rem TODO check if the found classpath contains the ame jars as the plugin
+                rem TODO If a CP exists with the plugin's name it is very likely that it hasn't been deleted when the plugin was uninstalled
+                
+                if(cpJars! = null()) then
+                    rem no cp found for the plugin name, creating one
+                    env!.setClasspath(installedPlugin!.getName(), jarDependencies!)
+                    
+                    installedPlugin!.setDependenciesClasspathName(cvs(installedPlugin!.getName(),8))
+                    
+                    rem prompting the SSP name to the user
+                    a = msgbox("A Session Specific classpath has been created for the " + installedPlugin!.getName() + " called: """ + cvs(installedPlugin!.getName(), 8) +"""" )
+                else
+                    a = msgbox("Failed to create a SSCP for the plugin")
+                endif
+            endif
+        endif
+       
+		#pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
+		
+        rem Setting the hasDemo flag depending on the plugin's folder structure 
         #pluginFolderParser!.setHasDemo(installedPlugin!)
+
+        rem updating the install.json file content
+        #installationService!.updateInstalledPluginData(installedPlugin!)
+        
         #installedPlugins!.add(installedPlugin!)
 
         #setUpdateAvailableFlag(installedPlugin!, installedPlugin!.getTag(), remotePlugin!)
@@ -348,6 +428,7 @@ class public PluginManager
 
     rem /**
     rem  * Uninstalls the BBj plugin with the given name.
+    rem  * The method removes the plugins directory.
     rem  * 
     rem  * @param pluginName! The name of the plugin to uninstall
     rem  */
@@ -436,6 +517,7 @@ class public PluginManager
             methodret
         endif
 
+        rem if the current tag is not the master tag, get the latest available tag version
         if(!tag!.isMaster()) then
             latestVersionTagName! = tag!.getName()
 
@@ -459,12 +541,15 @@ class public PluginManager
             tag! = cast(Tag, remotePlugin!.getTag(latestVersionTagName!))
         endif
 
+        rem TODO in some cases it is not possible to delete files from the plugin dir
+
         rem TODO Make sure not to delete any files that the user created 
         #installationService!.uninstallPlugin(plugin!)
         #installedPlugins!.remove(plugin!)
 
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
+        
         #pluginFolderParser!.setHasDemo(installedPlugin!)
 
         plugin!.setInstallationDate(new java.util.Date())
@@ -556,6 +641,12 @@ class public PluginManager
         methodret remotePlugin!.getTag(tagName!)
     methodend
 
+    rem /**
+    rem  * Returns true if the given tag's dependencies are installed,
+    rem  * false otherwise. 
+    rem  * 
+    rem  * @return true if the tag's dependencies are installed, false otherwise.
+    rem  */
     method public Boolean areDependenciesInstalled(Tag tag!)
         if(tag! = null()) then
             throw "null object: tag!", 255
@@ -602,6 +693,14 @@ class public PluginManager
         methodret Boolean.FALSE
     methodend
 
+    rem /**
+    rem  * Returns true if the given installed plugin is a dependency 
+    rem  * of another plugin, false otherwise.
+    rem  * 
+    rem  * @param bbjPlugin! The installed BBjPlugin
+    rem  * @return true if the given plugin is a dependency of another
+    rem  *         installed plugin 
+    rem  */
     method public Boolean isDependency(InstalledBBjPlugin bbjPlugin!)
         methodret !#getDependentPlugins(bbjPlugin!).isEmpty()
     methodend

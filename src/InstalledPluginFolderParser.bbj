@@ -243,6 +243,9 @@ class public InstalledPluginFolderParser
         endif
     methodend
 
+    rem /**
+    rem  * Parses the installed plugins and sets the RemoteBBjPlugin dependencies
+    rem  */
     method public void addDependencies(ArrayList installedPluginList!)
         if(#dependencyMap! = null() OR #dependencyMap!.isEmpty()) then
             methodret
@@ -292,4 +295,67 @@ class public InstalledPluginFolderParser
         wend
     methodend
 
+    rem /**
+    rem  * Parses the given installed plugin's installation directory and returns true if the directory contains
+    rem  * a directory called dependencies/ having one or more .jar files. Returns false otherwise.
+    rem  * 
+    rem  * @param installedPlugin!  
+    rem  */
+    method public boolean hasPluginJarDependencies(InstalledBBjPlugin installedPlugin!)
+        rem Checking if the plugin has a dependencies/ folder
+        declare File dependenciesFolder!
+        dependenciesFolder! = new File(installedPlugin!.getInstallationDirectory(), "dependencies")
+
+        if(dependenciesFolder!.exists()) then
+            declare File currentFile!
+
+            declare java.util.List fileList!
+            fileList! = cast(java.util.List, Arrays.asList(dependenciesFolder!.listFiles()))
+
+            declare Iterator it!
+            it! = fileList!.iterator()
+
+            while(it!.hasNext())
+                currentFile! = cast(File, it!.next())
+
+                if(currentFile!.isFile() AND currentFile!.getName().endsWith(".jar")) then
+                    methodret Boolean.TRUE
+                endif
+            wend
+        endif
+        
+        methodret Boolean.FALSE
+    methodend
+    
+    method public BBjVector getJarDependencies(InstalledBBjPlugin installedPlugin!)
+        rem Checking if the plugin has a dependencies/ folder
+        declare File dependenciesFolder!
+        dependenciesFolder! = new File(installedPlugin!.getInstallationDirectory(), "dependencies")
+
+        if(!dependenciesFolder!.exists()) then
+            methodret new BBjVector()
+        endif
+        
+        declare File currentFile!
+        
+        declare BBjVector jarFilesNames!
+        jarFilesNames! = new BBjVector()
+
+        declare java.util.List fileList!
+        fileList! = cast(java.util.List, Arrays.asList(dependenciesFolder!.listFiles()))
+
+        declare Iterator it!
+        it! = fileList!.iterator()
+
+        while(it!.hasNext())
+            currentFile! = cast(File, it!.next())
+
+            if(currentFile!.isFile() AND currentFile!.getName().endsWith(".jar")) then
+                jarFilesNames!.add(currentFile!.getAbsolutePath())
+            endif
+        wend
+        
+        methodret jarFilesNames!
+    methodend
+    
 classend

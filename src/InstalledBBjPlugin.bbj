@@ -31,6 +31,12 @@ class public InstalledBBjPlugin extends BBjPlugin
     rem the installation directory of the plugin
     field private File installationDirectory!
     
+    rem indicates whether the plugin depends on jars from its dependencies/ folder or not
+    field private Boolean hasJarDependencies!
+    
+    rem the name of the classpath which contains the plugin's jar dependencies 
+    field private String dependenciesClasspathName!
+    
     field private ArrayList demoProgramNameList!
 
     method public InstalledBBjPlugin()
@@ -63,10 +69,61 @@ class public InstalledBBjPlugin extends BBjPlugin
         methodret #installationDirectory!
     methodend
     
+    rem /**
+    rem  * Sets the name of the classpath which contains the plugin's 
+    rem  * jar dependencies
+    rem  *  
+    rem  * @param classpathName! the name of the classpath to set.
+    rem  */
+    method public void setDependenciesClasspathName(String classpathName!)
+        #dependenciesClasspathName! = classpathName!
+    methodend
+    
+    rem /**
+    rem  * Returns the name of the classpath which contains the plugin's 
+    rem  * jar dependencies. Returns null() if there is no classpath.
+    rem  *  
+    rem  * @return the name of the classpath with the plugin's jar dependencies or null().
+    rem  */
+    method public String getDependenciesClasspathName()
+        methodret #dependenciesClasspathName!
+    methodend
+    
+    rem /**
+    rem  * Sets the value of the flag "hasJarDependencies" to the given value.
+    rem  * 
+    rem  * @param hasJarDependencies! The boolean value to set.
+    rem  */
+    method public void setHasJarDependencies(Boolean hasJarDependencies!)
+        #hasJarDependencies! = hasJarDependencies!
+    methodend
+    
+    rem /**
+    rem  * Returns true if the plugin depends on jars 
+    rem  * from it's dependencies folder. Returns false otherwise.
+    rem  * 
+    rem  * @return true if the plugin's execution depends on jars from 
+    rem  *         its dependencies/ folder. Returns false otherwise.
+    rem  */
+    method public Boolean hasJarDenpendencies()
+        methodret #hasJarDependencies!
+    methodend
+    
+    rem /**
+    rem  * Sets the flag "hasDemo" to the given boolean value.
+    rem  * 
+    rem  * @param the boolean value to set. 
+    rem  */
     method public void setHasDemo(Boolean hasDemo!)
         #hasDemo! = hasDemo!
     methodend
     
+    rem /**
+    rem  * Returns true if the plugin has one or multiple 
+    rem  * demo programs, false otherwise.
+    rem  * 
+    rem  * @return true if the plugin has demos, false otherwise.
+    rem  */
     method public Boolean hasDemo()
         methodret #hasDemo!
     methodend

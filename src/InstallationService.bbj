@@ -46,6 +46,9 @@ use com.google.gson.stream.JsonReader
 
 use ::PluginManager/src/GithubApiService.bbj::GithubApiService
 
+rem /**
+rem  * Provides methods to install and uninstall plugins
+rem  */
 class public InstallationService
 
     field private PluginManagerLauncher pluginManagerLauncher!
@@ -163,8 +166,80 @@ class public InstallationService
 
         methodret installedPlugin!
     methodend
+    
+    rem /**
+    rem  * Updates the install.json file content from the given plugin
+    rem  * using the information stored in the given object. 
+    rem  */
+    method public void updateInstalledPluginData(InstalledBBjPlugin installedPlugin!)
+        declare JsonObject jsonObject!
+        jsonObject! = new JsonObject()
+        jsonObject!.addProperty("id", installedPlugin!.getID().intValue())
+        jsonObject!.addProperty("project_url", installedPlugin!.getProjectURL())
 
+        declare SimpleDateFormat sdf!
+        sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
+        sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
+
+        jsonObject!.addProperty("installation_date", sdf!.format(installedPlugin!.getInstallationDate()))
+        
+        jsonObject!.addProperty("has_demo", installedPlugin!.hasDemo())
+
+        declare Tag tag!
+        tag! = installedPlugin!.getTag()
+
+        declare JsonObject jsonTagObject!
+        jsonTagObject! = new JsonObject()
+
+        if(tag!.getBBjDependency() <> null()) then
+            jsonTagObject!.addProperty("bbj_dependency", tag!.getBBjDependency())
+        endif
+
+        jsonTagObject!.addProperty("tag_name", tag!.getName())
+        jsonTagObject!.addProperty("last_change", sdf!.format(tag!.getLastChangeDate()))
+        
+        if(!tag!.getPluginDependencyMap().isEmpty()) then
+            declare JsonArray dependencyArray!
+            dependencyArray! = new JsonArray()
+
+            declare JsonObject dependency!
+
+            declare Iterator it!
+            it! = cast(Iterator, tag!.getPluginDependencyMap().entrySet().iterator())
+
+            while(it!.hasNext())
+                entry! = it!.next()
+
+                dependency! = new JsonObject()
+
+                dependency!.addProperty("plugin_name" , cast(RemoteBBjPlugin, entry!.getKey()).getName())
+                dependency!.addProperty("project_url", cast(RemoteBBjPlugin, entry!.getKey()).getProjectURL())
+                dependency!.addProperty("plugin_version", cast(Tag, entry!.getValue()).getName())
+
+                dependencyArray!.add(dependency!)
+            wend
+
+            jsonTagObject!.add("plugin_dependencies", dependencyArray!)
+        endif
+
+        jsonObject!.add("tag", jsonTagObject!)
+
+        file! = new File(installedPlugin!.getInstallationDirectory(), "install.json")
+
+        declare FileWriter fileWriter!
+        fileWriter! = new FileWriter(file!)
+        fileWriter!.write(jsonObject!.toString())
+        fileWriter!.close()
+
+        file!.createNewFile()
+    methodend
+    
     method public void uninstallPlugin(InstalledBBjPlugin installedPlugin!)
+        rem if the plugin has a classpath, delete it
+        if(installedPlugin!.hasJarDenpendencies() AND installedPlugin!.getDependenciesClasspathName() > "") then
+            rem TODO delete the classpath
+        endif
+        
         #deleteDirectory(installedPlugin!.getInstallationDirectory())
     methodend
 
@@ -192,5 +267,19 @@ class public InstallationService
 
         directory!.delete()
     methodend
+    
+REM     method public void updatePlugin(InstalledBBjPlugin installedPlugin!, RemoteBBjPlugin remotePlugin!, Tag tag!)
+REM         #updatePlugin(installedPlugin!, remotePlugin!, tag!, null(), null())
+REM     methodend
+REM     
+REM     rem /**
+REM     rem  * Updates the given installed plugin with the given remote plugin and the version(=tag).
+REM     rem  * 
+REM     rem  * The method downloads and unzips the plugin in the temp directory then overwrites the files
+REM     rem  * from the installed plugin directory. 
+REM     rem  */
+REM     method public InstalledBBjPlugin updatePlugin(InstalledBBjPlugin installedPlugin!, RemoteBBjPlugin remotePlugin!, Tag tag!, String username!, String password!)        
+REM         methodret null()
+REM     methodend
 
 classend
