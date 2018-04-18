@@ -86,44 +86,25 @@ class public PluginManagerLauncher
         endif
     methodend
 
+    rem /**
+    rem  * Returns true if the current prefix contains the plugin
+    rem  * home directory, false otherwise.
+    rem  * 
+    rem  * @return true if the plugin home directory is part of the prefix, false otherwise.
+    rem  */
     method public Boolean prefixContainsPluginsDirectory()
         prefixPaths! = pfx
-
-        declare BBjVector vect!
-        vect! = new BBjVector()
-
-        noQuotePrefix! = ""
-
-        while(prefixPaths!.contains(""""))
-            firstIndex = prefixPaths!.indexOf("""")
-            lastIndex = prefixPaths!.indexOf("""", firstIndex+1)
-
-            vect!.add(prefixPaths!.substring(firstIndex+1, lastIndex))
-            noQuotePrefix! = noQuotePrefix! + prefixPaths!.substring(0, firstIndex)
-            prefixPaths! = prefixPaths!.substring(lastIndex+1)
-
-            if(!prefixPaths!.isEmpty())
-                prefixPaths! = prefixPaths!.trim()
-            endif
-        wend
-
-        noQuotePrefix! = noQuotePrefix! + prefixPaths!
-        vect!.addAll(Arrays.asList(noQuotePrefix!.split(" ")))
-
-        declare File directory!
-
-        declare Iterator it!
-        it! = vect!.iterator()
-
-        while(it!.hasNext())
-            directory! = new File(cast(String, it!.next()))
-
-            if(directory!.equals(#pluginsHome!)) then
-                methodret Boolean.TRUE
-            endif
-        wend
-
-        methodret Boolean.FALSE
+        pluginsHomePath! = #pluginsHome!.getAbsolutePath()
+        
+        if !prefixPaths!.contains(pluginsHomePath!) then
+            methodret Boolean.FALSE
+        endif
+        
+        pluginsHomeRegex! = pluginsHomePath!.replace("\", "\\")
+        pluginsHomeRegex! = pluginsHomeRegex!.replace(" ", "\s")
+        pluginsHomeRegex! = pluginsHomeRegex!.replace("/", "\/")
+        
+        methodret prefixPaths!.matches(".*(?<=^|\""|\s)" + pluginsHomeRegex! + "(?=(\\|\/)?(\""|\s|$)).*")
     methodend
 
     method public void addPluginsDirectoryToThePrefix()
