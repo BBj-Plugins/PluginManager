@@ -96,14 +96,64 @@ class public PluginManagerLauncher
         prefixPaths! = pfx
         pluginsHomePath! = #pluginsHome!.getAbsolutePath()
         
-        if !prefixPaths!.contains(pluginsHomePath!) then
+        declare BBjVector vect!
+        vect! = new BBjVector()
+        if prefixPaths!.contains("""") then
+            rem counting the quotes to avoid parsing unbalanced prefixes
+            for i = 0 to prefixPaths!.length() -1
+                if new String(prefixPaths!.charAt(i)) = """" then
+                    quoteCounter = quoteCounter + 1
+                endif
+            next i
+            
+            noQuotePrefix! = ""
+            if mod(quoteCounter, 2) = 0 then
+                while(prefixPaths!.contains(""""))
+                    firstIndex = prefixPaths!.indexOf("""")
+                    lastIndex = prefixPaths!.indexOf("""", firstIndex+1)
+             
+                    vect!.add(prefixPaths!.substring(firstIndex+1, lastIndex))
+                    noQuotePrefix! = noQuotePrefix! + prefixPaths!.substring(0, firstIndex)
+                    prefixPaths! = prefixPaths!.substring(lastIndex+1)
+             
+                    if(!prefixPaths!.isEmpty())
+                        prefixPaths! = prefixPaths!.trim()
+                    endif
+                wend
+                
+                noQuotePrefix! = noQuotePrefix! + prefixPaths!
+                vect!.addAll(Arrays.asList(noQuotePrefix!.split(" ")))
+            else
+                a = msgbox("Your prefix contains an uneven amount of quotes, please review your prefix and remove the unnecessary quotes.")
+                unbalancedPrefix = 1
+            endif
+        else
+            vect!.addAll(Arrays.asList(prefixPaths!.split(" ")))
+        endif
+        
+        rem create file object handles and compare the directories
+        if !unbalancedPrefix then
+            declare File directory!
+ 
+            declare Iterator it!
+            it! = vect!.iterator()
+     
+            while(it!.hasNext())
+                directory! = new File(cast(String, it!.next()))
+     
+                if(directory!.equals(#pluginsHome!)) then
+                    methodret Boolean.TRUE
+                endif
+            wend
+            
             methodret Boolean.FALSE
         endif
         
-        pluginsHomeRegex! = pluginsHomePath!.replace("\", "\\")
+        rem check using a regular expression if the path is already defined in the prefix
+        pluginsHomeRegex! = pluginsHomePath!.replaceAll("\\|\/", "(\\\\|\\\/)")
         pluginsHomeRegex! = pluginsHomeRegex!.replace(" ", "\s")
-        pluginsHomeRegex! = pluginsHomeRegex!.replace("/", "\/")
         
+        rem ? ".*(?<=^|\""|\s)" + pluginsHomeRegex! + "(?=(\\|\/)?(\""|\s|$)).*"
         methodret prefixPaths!.matches(".*(?<=^|\""|\s)" + pluginsHomeRegex! + "(?=(\\|\/)?(\""|\s|$)).*")
     methodend
 
