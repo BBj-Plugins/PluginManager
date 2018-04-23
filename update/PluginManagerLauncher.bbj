@@ -51,7 +51,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.03
+    field public static BBjNumber ProgramVersion = 1.04
 
     method public PluginManagerLauncher()
         #init()
