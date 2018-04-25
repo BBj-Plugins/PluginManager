@@ -51,7 +51,11 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.04
+    field private String PROXY_PORT_PROPERTY!     = "PluginManager_ProxyPort"
+    field private String PROXY_TYPE_PROPERTY!     = "PluginManager_ProxyType"
+    field private String PROXY_HOSTNAME_PROPERTY! = "PluginManager_ProxyHostname"
+
+    field public static BBjNumber ProgramVersion = 1.05
 
     method public PluginManagerLauncher()
         #init()
@@ -291,9 +295,13 @@ class public PluginManagerLauncher
             declare BBjThinClient thinClient!
             thinClient! = bbjapi().getThinClient()
 
-            proxyPort! = thinClient!.getUserProperty("PluginManager_ProxyPort", err=*next)
-            proxyHostname! = thinClient!.getUserProperty("PluginManager_ProxyHostname", err=*next)
-            proxyTypeString! = thinClient!.getUserProperty("PluginManager_ProxyType", err=*next)
+            proxyPort! = ""
+            proxyHostname! = ""
+            proxyTypeString! = ""
+            
+            proxyPort! = thinClient!.getUserProperty(#PROXY_PORT_PROPERTY!, err=*next)
+            proxyHostname! = thinClient!.getUserProperty(#PROXY_HOSTNAME_PROPERTY!, err=*next)
+            proxyTypeString! = thinClient!.getUserProperty(#PROXY_TYPE_PROPERTY!, err=*next)
 
             if(proxyHostname! <> "" AND proxyTypeString! <> "" AND proxyPort! <> "") then
                 port = num(proxyPort!)
@@ -378,9 +386,9 @@ class public PluginManagerLauncher
             declare BBjThinClient thinClient!
             thinClient! = bbjapi().getThinClient()
 
-            thinClient!.setUserProperty("PluginManager_ProxyPort", str(cast(InetSocketAddress, proxy!.address()).getPort()))
-            thinClient!.setUserProperty("PluginManager_ProxyHostname", cast(InetSocketAddress, proxy!.address()).getHostName())
-            thinClient!.setUserProperty("PluginManager_ProxyType", proxy!.type().toString())
+            thinClient!.setUserProperty(#PROXY_TYPE_PROPERTY!, proxy!.type().toString())
+            thinClient!.setUserProperty(#PROXY_PORT_PROPERTY!, str(cast(InetSocketAddress, proxy!.address()).getPort()))
+            thinClient!.setUserProperty(#PROXY_HOSTNAME_PROPERTY!, cast(InetSocketAddress, proxy!.address()).getHostName())
         endif
 
         rem unzips the zip file to the given directory
