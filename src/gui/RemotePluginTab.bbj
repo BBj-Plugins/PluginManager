@@ -53,7 +53,7 @@ class public RemotePluginTab
         control_width = 300
         control_height = 25
         cw_next_id = childWindow!.getAvailableControlID()
-        #cbxIncludeDevPlugins! = childWindow!.addCheckBox(cw_next_id, row_x, row_y, control_width, control_height, "Include development plugins")
+        #cbxIncludeDevPlugins! = childWindow!.addCheckBox(cw_next_id, row_x, row_y, control_width, control_height, "Show only development plugins")
         #cbxIncludeDevPlugins!.setSelected(0)
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_ON, #this!, "includeDevelopmentPlugins")
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_OFF, #this!, "excludeDevelopmentPlugins")
@@ -75,6 +75,7 @@ class public RemotePluginTab
         #grdPlugins!.setHasColumnHeader(1)
         #grdPlugins!.setSelectionMode(#grdPlugins!.GRID_SELECT_ROW)
         #grdPlugins!.setCallback(BBjAPI.ON_GRID_SELECT_ROW, #this!, "pluginGridRowSelected")
+        #grdPlugins!.setCallback(BBjAPI.ON_GRID_MOUSE_UP, #this!, "pluginGridMouseUp")
 
         columnHeaderVector! = new BBjVector()
         columnHeaderVector!.add("Plugin ID")
@@ -397,6 +398,10 @@ class public RemotePluginTab
 
         bbjapi().postCustomEvent(PluginManagerUI.getINSTALL_PLUGIN_REQUEST(), map!)
     methodend
+    
+    method public void pluginGridMouseUp(BBjGridMouseUpEvent event!)
+        #updatePluginInformation()
+    methodend
 
     method public RemoteBBjPlugin getSelectedPlugin()
         pluginID! = #grdPlugins!.getCellText(#grdPlugins!.getSelectedRow(), 0)
@@ -488,27 +493,40 @@ class public RemotePluginTab
 
         methodret null()
     methodend
+    
+    rem /**
+    rem  * Clears the plugin information fields.
+    rem  */
+    method private void resetPluginInformation()
+        #txtPluginStatus!.setText("")
+        #txtPluginName!.setText("")
+        #txtPluginDescription!.setText("")
+        #btnPluginProjectURL!.setText("")
+        #txtPluginVersionName!.setText("")
+        #txtPluginBBjDependency!.setText("")
+        #txtPluginVersionDate!.setText("")
+        #txtPluginDependecies!.setText("")
+    methodend
 
     rem /**
     rem  * Updates the Plugin information field entries below the grid 
     rem  * using the currently selected plugin in the grid
     rem  */
     method public void updatePluginInformation()
-        pluginID! = #grdPlugins!.getCellText(#grdPlugins!.getSelectedRow(), 0)
+        selectedRow = #grdPlugins!.getSelectedRow()
 
+        if selectedRow = -1 then
+            #resetPluginInformation()
+            methodret
+        endif
+        
         declare RemoteBBjPlugin remotePlugin!
+        pluginID! = #grdPlugins!.getCellText(selectedRow, 0)
         remotePlugin! = cast(RemoteBBjPlugin, #getRemotePlugin(num(pluginID!)))
-
+        
         rem reset the information if no plugin is selected
         if(remotePlugin! = null()) then
-            #txtPluginStatus!.setText("")
-            #txtPluginName!.setText("")
-            #txtPluginDescription!.setText("")
-            #btnPluginProjectURL!.setText("")
-            #txtPluginVersionName!.setText("")
-            #txtPluginBBjDependency!.setText("")
-            #txtPluginVersionDate!.setText("")
-            #txtPluginDependecies!.setText("")
+            #resetPluginInformation()
             methodret
         endif
 

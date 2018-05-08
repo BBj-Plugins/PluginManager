@@ -103,6 +103,7 @@ class public InstalledPluginTab
         #grdPlugins!.setColumnWidth(0, 0)
 
         #grdPlugins!.setCallback(BBjAPI.ON_GRID_SELECT_ROW, #this!, "installedPluginGridRowSelected")
+        #grdPlugins!.setCallback(BBjAPI.ON_GRID_MOUSE_UP, #this!, "installedPluginGridMouseUp")
 
         column1_x = 10
         column2_x = ((cw_width -(2*10))/2) + 100
@@ -399,9 +400,21 @@ class public InstalledPluginTab
         methodret null()
     methodend
 
+    rem /**
+    rem  * Returns the currently selected plugin object or null
+    rem  * if no line is selected.
+    rem  * 
+    rem  * @return returns the selected plugin or null.
+    rem  */
     method public InstalledBBjPlugin getSelectedPlugin()
+        selectedRow = #grdPlugins!.getSelectedRow()
+        
+        if selectedRow = -1 then
+            methodret null()
+        endif
+        
         rem the plugin ID
-        pluginID! = #grdPlugins!.getCellText(#grdPlugins!.getSelectedRow(), 0)
+        pluginID! = #grdPlugins!.getCellText(selectedRow, 0)
 
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getInstalledPlugin(num(pluginID!)))
@@ -444,23 +457,30 @@ class public InstalledPluginTab
 
         bbjapi().postCustomEvent(PluginManagerUI.getUNINSTALL_PLUGIN_REQUEST(), installedPlugin!)
     methodend
+    
+    rem /**
+    rem  * Resets the plugin informations.
+    rem  */
+    method private void resetPluginInformation()
+        #txtSelectedInstalledPluginName!.setText("")
+        #btnPluginProjectURL!.setText("")
+        #txtSelectedInstalledPluginStatus!.setText("")
+        #txtSelectedInstalledPluginStatus!.setBackColor(#txtSelectedInstalledPluginName!.getBackColor())
+        #txtSelectedInstalledPluginDescription!.setText("")
+        #txtSelectedInstalledPluginVersionName!.setText("")
+        #txtSelectedInstalledPluginInstallDate!.setText("")
+        #txtSelectedInstalledPluginBBjDependency!.setText("")
+        #btnPluginDocumentationURL!.setText("")
+        #txtSelectedInstalledPluginDependecies!.setText("")
+    methodend
 
     method private void updateInstalledPluginInformation()
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
-
+        
         rem no plugin selected - Reset the values
         if(installedPlugin! = null()) then
-            #txtSelectedInstalledPluginName!.setText("")
-            #btnPluginProjectURL!.setText("")
-            #txtSelectedInstalledPluginStatus!.setText("")
-            #txtSelectedInstalledPluginStatus!.setBackColor(#txtSelectedInstalledPluginName!.getBackColor())
-            #txtSelectedInstalledPluginDescription!.setText("")
-            #txtSelectedInstalledPluginVersionName!.setText("")
-            #txtSelectedInstalledPluginInstallDate!.setText("")
-            #txtSelectedInstalledPluginBBjDependency!.setText("")
-            #btnPluginDocumentationURL!.setText("")
-            #txtSelectedInstalledPluginDependecies!.setText("")
+            #resetPluginInformation()
             methodret
         endif
 
@@ -575,10 +595,12 @@ class public InstalledPluginTab
         rem no plugin passed, disable the button
         if(installedPlugin! = null()) then
             #btnRunConfiguration!.setEnabled(Boolean.FALSE)
+            #btnRunConfiguration!.setVisible(Boolean.FALSE)
             methodret
         endif
 
         #btnRunConfiguration!.setEnabled(installedPlugin!.hasConfigurationProgram())
+        #btnRunConfiguration!.setVisible(installedPlugin!.hasConfigurationProgram())
     methodend
 
     rem /**
@@ -591,61 +613,66 @@ class public InstalledPluginTab
     rem  */
     method private void updateDemoButtonState(InstalledBBjPlugin installedPlugin!)
         rem No plugin passed, reset the button's values and disable it
-        if(installedPlugin! = null()) then
+        if(installedPlugin! = null() OR !installedPlugin!.hasDemo()) then
             #mbRunDemo!.setText("Demo.bbj")
             #mbRunDemo!.removeDropdownMenu()
             #mbRunDemo!.setEnabled(0)
+            #mbRunDemo!.setVisible(Boolean.FALSE)
             methodret
         endif
+        
+        declare ArrayList demoProgramNameList!
+        demoProgramNameList! = installedPlugin!.getDemoProgramNames()
 
-        rem Enabling the Run demo button if the plugin has a demo program
-        if(installedPlugin!.hasDemo()) then
-            declare ArrayList demoProgramNameList!
-            demoProgramNameList! = installedPlugin!.getDemoProgramNames()
+        if(demoProgramNameList!.size() = 1) then
+            #mbRunDemo!.removeDropdownMenu()
+            #mbRunDemo!.setText(str(demoProgramNameList!.get(0)))
+        else
+            declare Iterator it!
+            it! = demoProgramNameList!.iterator()
 
-            if(demoProgramNameList!.size() = 1) then
-                #mbRunDemo!.removeDropdownMenu()
-                #mbRunDemo!.setText(str(demoProgramNameList!.get(0)))
+            rem Always preselect the Demo.bbj program if present
+            if(demoProgramNameList!.contains("Demo.bbj")) then
+                excludeName! = "Demo.bbj"
             else
-                declare Iterator it!
-                it! = demoProgramNameList!.iterator()
-
-                rem Always preselect the Demo.bbj program if present
-                if(demoProgramNameList!.contains("Demo.bbj")) then
-                    excludeName! = "Demo.bbj"
-                else
-                    excludeName! = str(demoProgramNameList!.get(0))
-                endif
-
-                #mbRunDemo!.setText(excludeName!)
-
-                declare BBjPopupMenu popupMenu!
-                popupMenu! = #sysGui!.addPopupMenu()
-
-                declare BBjMenuItem menuItem!
-
-                id = 1
-                while(it!.hasNext())
-                    demoProgramName! = cast(String, it!.next())
-
-                    if(demoProgramName! = excludeName!) then
-                        continue
-                    endif
-
-                    menuItem! = cast(BBjMenuItem, popupMenu!.addMenuItem(0-id, demoProgramName!))
-                    menuItem!.setCallback(BBjAPI.ON_POPUP_ITEM_SELECT, #this!, "demoProgramMenuItemSelected")
-                    id = id + 1
-                wend
-
-                #mbRunDemo!.setDropdownMenu(popupMenu!)
+                excludeName! = str(demoProgramNameList!.get(0))
             endif
 
-            #mbRunDemo!.setEnabled(1)
-        else
-            #mbRunDemo!.setText("Demo.bbj")
-            #mbRunDemo!.removeDropdownMenu()
-            #mbRunDemo!.setEnabled(0)
+            #mbRunDemo!.setText(excludeName!)
+
+            declare BBjPopupMenu popupMenu!
+            popupMenu! = #sysGui!.addPopupMenu()
+
+            declare BBjMenuItem menuItem!
+
+            id = 1
+            while(it!.hasNext())
+                demoProgramName! = cast(String, it!.next())
+
+                if(demoProgramName! = excludeName!) then
+                    continue
+                endif
+
+                menuItem! = cast(BBjMenuItem, popupMenu!.addMenuItem(0-id, demoProgramName!))
+                menuItem!.setCallback(BBjAPI.ON_POPUP_ITEM_SELECT, #this!, "demoProgramMenuItemSelected")
+                id = id + 1
+            wend
+
+            #mbRunDemo!.setDropdownMenu(popupMenu!)
         endif
+
+        #mbRunDemo!.setEnabled(1)
+        #mbRunDemo!.setVisible(Boolean.TRUE)
+    methodend
+    
+    method public void installedPluginGridMouseUp(BBjGridMouseUpEvent event!)
+        #updateInstalledPluginInformation()
+        
+        declare InstalledBBjPlugin plugin!
+        plugin! = cast(InstalledBBjPlugin, #getSelectedPlugin())
+        
+        #updateDemoButtonState(plugin!)
+        #updateConfigureButtonState(plugin!)
     methodend
 
     method public void demoProgramMenuItemSelected(BBjPopupSelectEvent event!)

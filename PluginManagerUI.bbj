@@ -102,6 +102,7 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
         #remoteTab! = new RemotePluginTab(#window!, #tabCtrl!.getWidth(), #tabCtrl!.getHeight(), #sysGui!)
         #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
         #tabCtrl!.addTab("Available Plugins", #remoteTab!.getChildWindow())
+        
         bbjapi().setCustomEventCallback(#INSTALL_PLUGIN_REQUEST!, #this!, "installPluginRequest")
         bbjapi().setCustomEventCallback(#RUN_DEMO_PROGRAM!, #this!, "runDemoProgram")
         bbjapi().setCustomEventCallback(#ADD_CUSTOM_PLUGIN!, #this!, "addCustomPlugin")
