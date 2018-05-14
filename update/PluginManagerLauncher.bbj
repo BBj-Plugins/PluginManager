@@ -33,6 +33,28 @@ use java.io.ByteArrayOutputStream
 
 use java.text.SimpleDateFormat
 
+use org.apache.http.auth.AuthScope
+use org.apache.http.auth.UsernamePasswordCredentials
+
+use org.apache.http.client.config.RequestConfig
+use org.apache.http.client.config.RequestConfig.Builder
+
+use org.apache.http.client.methods.HttpGet
+
+use org.apache.http.client.HttpClient
+use org.apache.http.client.CredentialsProvider
+
+use org.apache.http.impl.auth.BasicScheme
+
+use org.apache.http.impl.client.HttpClientBuilder
+use org.apache.http.impl.client.BasicCredentialsProvider
+
+use org.apache.http.Header
+use org.apache.http.HttpHost
+use org.apache.http.HttpEntity
+use org.apache.http.HttpRequest
+use org.apache.http.HttpResponse
+
 use com.google.gson.JsonArray
 use com.google.gson.JsonParser
 use com.google.gson.JsonObject
@@ -51,11 +73,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field private String PROXY_PORT_PROPERTY!     = "PluginManager_ProxyPort"
-    field private String PROXY_TYPE_PROPERTY!     = "PluginManager_ProxyType"
-    field private String PROXY_HOSTNAME_PROPERTY! = "PluginManager_ProxyHostname"
-
-    field public static BBjNumber ProgramVersion = 1.05
+    field public static BBjNumber ProgramVersion = 1.06
 
     method public PluginManagerLauncher()
         #init()
@@ -72,8 +90,6 @@ class public PluginManagerLauncher
         if(!#pluginsHome!.exists()) then
             throw "The plugin folder could not be found", 255
         endif
-
-        #proxyConfigurationWindow! = new ProxyConfigurationWindow()
 
         if(!#prefixContainsPluginsDirectory()) then
             declare StringBuilder sb!
@@ -99,7 +115,7 @@ class public PluginManagerLauncher
     method public Boolean prefixContainsPluginsDirectory()
         prefixPaths! = pfx
         pluginsHomePath! = #pluginsHome!.getAbsolutePath()
-        
+
         declare BBjVector vect!
         vect! = new BBjVector()
         if prefixPaths!.contains("""") then
@@ -109,22 +125,22 @@ class public PluginManagerLauncher
                     quoteCounter = quoteCounter + 1
                 endif
             next i
-            
+
             noQuotePrefix! = ""
             if mod(quoteCounter, 2) = 0 then
                 while(prefixPaths!.contains(""""))
                     firstIndex = prefixPaths!.indexOf("""")
                     lastIndex = prefixPaths!.indexOf("""", firstIndex+1)
-             
+
                     vect!.add(prefixPaths!.substring(firstIndex+1, lastIndex))
                     noQuotePrefix! = noQuotePrefix! + prefixPaths!.substring(0, firstIndex)
                     prefixPaths! = prefixPaths!.substring(lastIndex+1)
-             
+
                     if(!prefixPaths!.isEmpty())
                         prefixPaths! = prefixPaths!.trim()
                     endif
                 wend
-                
+
                 noQuotePrefix! = noQuotePrefix! + prefixPaths!
                 vect!.addAll(Arrays.asList(noQuotePrefix!.split(" ")))
             else
@@ -134,29 +150,29 @@ class public PluginManagerLauncher
         else
             vect!.addAll(Arrays.asList(prefixPaths!.split(" ")))
         endif
-        
+
         rem create file object handles and compare the directories
         if !unbalancedPrefix then
             declare File directory!
- 
+
             declare Iterator it!
             it! = vect!.iterator()
-     
+
             while(it!.hasNext())
                 directory! = new File(cast(String, it!.next()))
-     
+
                 if(directory!.equals(#pluginsHome!)) then
                     methodret Boolean.TRUE
                 endif
             wend
-            
+
             methodret Boolean.FALSE
         endif
-        
+
         rem check using a regular expression if the path is already defined in the prefix
         pluginsHomeRegex! = pluginsHomePath!.replaceAll("\\|\/", "(\\\\|\\\/)")
         pluginsHomeRegex! = pluginsHomeRegex!.replace(" ", "\s")
-        
+
         rem ? ".*(?<=^|\""|\s)" + pluginsHomeRegex! + "(?=(\\|\/)?(\""|\s|$)).*"
         methodret prefixPaths!.matches(".*(?<=^|\""|\s)" + pluginsHomeRegex! + "(?=(\\|\/)?(\""|\s|$)).*")
     methodend
@@ -189,7 +205,7 @@ class public PluginManagerLauncher
         fileReader!.close()
         reader!.close()
 
-        ch = unt 
+        ch = unt
         open(ch, mode="o_trunc") BBjAPI().getConfig().getConfigFileName()
         write(ch)sb!.toString()
         close(ch)
@@ -235,7 +251,7 @@ class public PluginManagerLauncher
     method public void installPluginManager()
         pluginManagerDownloadURL$ = "https://github.com/BBj-Plugins/PluginManager/archive/master.zip"
 
-        pluginInstalled! = #installPlugin(pluginManagerDownloadURL$, "PluginManager")
+        pluginInstalled! = #installPlugin(new URL(pluginManagerDownloadURL$), "PluginManager")
 
         if(!pluginInstalled!) then
             a = msgbox("The PluginManager could not be downloaded / installed. Please try again later or contact BASIS Support.")
@@ -264,132 +280,109 @@ class public PluginManagerLauncher
 
         installJsonFile!.createNewFile()
     methodend
+    
+    method public ProxyConfigurationWindow promptForProxySettings(HttpHost proxy!)
+        declare StringBuilder sb!
+ 
+        if(proxy! = null()) then
+            sb! = new StringBuilder()
+            sb!.append("Failed to download the plugin from github. Either the site is currently not available, ")
+            sb!.append("or your system's network settings might block the connection." + $0A$)
+            sb!.append($0A$)
+            sb!.append("If the connection can only be established over a Proxy Server, ")
+            sb!.append("you'll need to specify the Proxy Server's settings. Would you like to configure the connection ?")
+        else
+            sb! = new StringBuilder()
+            sb!.append("Failed to download the plugin from github using the following Proxy Server settings:" + $0A$)
+            sb!.append("Proxy Hostname: " + proxy!.getHostName() + $0A$)
+            sb!.append("Proxy Port: " + str(proxy!.getPort()) + $0A$ + $0A$)
+            sb!.append("The exact error message is logged in the debug log." + $0A$)
+            sb!.append("Would you like to adapt those settings ?")
+        endif
+        
+        a = msgbox(sb!.toString(), 4)
 
-    rem /**
-    rem  * Downloads the zip archive from the given url, and extracts it to the bbj/plugins folder
-    rem  * 
-    rem  * @param downloadURL! The URL from where the .zip file is downloaded
-    rem  * @param projectName! The name of the plugin to download & install
-    rem  */
-    method public Boolean installPlugin(String downloadURL!, String projectName!)
-        declare URL url!
-        url! = new URL(downloadURL!)
+        if a <> 6 then
+            methodret null()
+        endif
 
-        declare URLConnection connection!
-        connection! = url!.openConnection()
-
-        methodret #installPlugin(connection!, projectName!)
+        if #proxyConfigurationWindow! = null() then
+            #proxyConfigurationWindow! = new ProxyConfigurationWindow()
+        endif
+        
+        #proxyConfigurationWindow!.open()
+        
+        methodret #proxyConfigurationWindow!
     methodend
-
-    method public Boolean installPlugin(URLConnection connection!, String projectName!)
+    
+    method public Boolean installPlugin(URL url!, String projectName!, UsernamePasswordCredentials credentials!)
         declare File zipFile!
         zipFile! = File.createTempFile(projectName!,".zip")
 
-        rem Downloads the zip file into the provided location
-        #downloadFile(connection!, zipFile!)
+        declare DownloadHelper downloadHelper!
+        downloadHelper! = new DownloadHelper()
 
-        rem check if the file was downloaded
-        rem if the file lenght is 0, it was not downloaded
-        if(zipFile!.length() = 0) then
-            declare Proxy proxy!
-            declare BBjThinClient thinClient!
-            thinClient! = bbjapi().getThinClient()
+        downloadHelper!.setDownloadURL(url!)
+        downloadHelper!.setOutputFile(zipFile!)
+        downloadHelper!.setSiteCredentials(credentials!)
 
-            proxyPort! = ""
-            proxyHostname! = ""
-            proxyTypeString! = ""
-            
-            proxyPort! = thinClient!.getUserProperty(#PROXY_PORT_PROPERTY!, err=*next)
-            proxyHostname! = thinClient!.getUserProperty(#PROXY_HOSTNAME_PROPERTY!, err=*next)
-            proxyTypeString! = thinClient!.getUserProperty(#PROXY_TYPE_PROPERTY!, err=*next)
+        if !downloadHelper!.isSiteReachable(Boolean.FALSE) then
+            downloadHelper!.setProxy(ProxyService.getProxyFromUserProperties())
+            downloadHelper!.setProxyCredentials(ProxyService.getProxyCredentialsFromUserProperties())
 
-            if(proxyHostname! <> "" AND proxyTypeString! <> "" AND proxyPort! <> "") then
-                port = num(proxyPort!)
+            if downloadHelper!.isSiteReachable(Boolean.TRUE) then
+                downloadHelper!.downloadFile(Boolean.TRUE)
+            else
+                declare HttpHost proxy!
+                declare ProxyConfigurationWindow window!
+                declare UsernamePasswordCredentials proxyCredentials!
 
-                if(proxyTypeString! = "DIRECT") then
-                    proxyType! = Proxy.Type.DIRECT
-                endif
-
-                if(proxyTypeString! = "HTTP") then
-                    proxyType! = Proxy.Type.HTTP
-                endif
-
-                if(proxyTypeString! = "SOCKS") then
-                    proxyType! = Proxy.Type.SOCKS
-                endif
-
-                proxy! = new Proxy(proxyType!, new InetSocketAddress(hostname!, port!), err=*next)
-            endif
-
-            if(proxy! <> null()) then
-                rem trying again to download the zip using the saved proxy settings 
-                #downloadFile(connection!.getURL().openConnection(proxy!), zipFile!)
-            endif
-
-            rem if no settings were saved or the file could not be downloaded
-            if(zipFile!.length() = 0) then
-                declare StringBuilder sb!
                 cancelProxySettings! = Boolean.FALSE
-
-                while(zipFile!.length() = 0 AND !cancelProxySettings!)
-                    if(proxy! = null()) then
-                        sb! = new StringBuilder()
-                        sb!.append("Failed to download the plugin from github. Either the site is currently not available, ")
-                        sb!.append("or your system's network settings might block the connection." + $0A$)
-                        sb!.append($0A$)
-                        sb!.append("If the connection can only be established over a Proxy Server, ")
-                        sb!.append("you'll need to specify the Proxy Server's settings. Would you like to configure the connection ?")
-                    else
-                        sb! = new StringBuilder()
-                        sb!.append("Failed to download the plugin from github using the following Proxy Server settings:" + $0A$)
-                        sb!.append("Proxy Type: " + proxy!.type().toString() + $0A$)
-                        sb!.append("Proxy Hostname: " + cast(InetSocketAddress, proxy!.address()).getHostName() + $0A$)
-                        sb!.append("Proxy Port: " + str(cast(InetSocketAddress, proxy!.address()).getPort()) + $0A$)
-                        sb!.append("Would you like to adapt those settings ?")
-                    endif
-
-                    a = msgbox(sb!.toString(), 4)
-
-                    if(a <> 6) then
+                while !downloadHelper!.isSiteReachable(Boolean.TRUE) AND !cancelProxySettings!
+                    window! = #promptForProxySettings(proxy!)
+                    
+                    if window! = null() OR window!.dialogCanceled() then
                         cancelProxySettings! = Boolean.TRUE
                         break
-                    else
-                        #proxyConfigurationWindow!.open()
+                    endif
+                    
+                    port = window!.getPort()
+                    hostname! = window!.getHostName()
 
-                        if(!#proxyConfigurationWindow!.dialogCanceled()) then
-                            hostname! = #proxyConfigurationWindow!.getHostName()
-                            port = #proxyConfigurationWindow!.getPort()
-                            proxyType! = #proxyConfigurationWindow!.getProxyType()
+                    proxy! = new HttpHost(hostname!, port)
+                    downloadHelper!.setProxy(proxy!)
 
-                            proxy! = new Proxy(proxyType!, new InetSocketAddress(hostname!, port!))
-                        else
-                            cancelProxySettings! = Boolean.TRUE
-                            break
-                        endif
+                    if window!.areCredentialsRequired() then
+                        username! = window!.getUsername()
+                        password! = window!.getPassword()
+
+                        downloadHelper!.setProxyCredentials(new UsernamePasswordCredentials(username!, password!))
                     endif
                 wend
-
-                rem Downloads the zip file into the provided location
-                #downloadFile(connection!.getURL().openConnection(proxy!), zipFile!)
+                
+                if downloadHelper!.isSiteReachable(Boolean.TRUE) then
+                    downloadHelper!.downloadFile(Boolean.TRUE)
+                endif
             endif
+        else
+            downloadHelper!.downloadFile(Boolean.FALSE)
         endif
 
-        rem if the file was not downloaded, return
-        if(zipFile!.length() = 0) then
-            rem deletes the zip file
-            zipFile!.delete()
-
+        if !downloadHelper!.wasDownloadSuccessful() then
+            zipFile!.delete(err=*next)
+            
+            ? 'cs'
+            if downloadHelper!.getDownloadError() = null() then
+                ? "Failed to establish the connection to the github repository"
+            else
+                ? 'cs', str(downloadHelper!.getDownloadError())
+            endif
+            
             methodret Boolean.FALSE
         endif
 
-        if(proxy! <> null()) then
-            declare BBjThinClient thinClient!
-            thinClient! = bbjapi().getThinClient()
-
-            thinClient!.setUserProperty(#PROXY_TYPE_PROPERTY!, proxy!.type().toString())
-            thinClient!.setUserProperty(#PROXY_PORT_PROPERTY!, str(cast(InetSocketAddress, proxy!.address()).getPort()))
-            thinClient!.setUserProperty(#PROXY_HOSTNAME_PROPERTY!, cast(InetSocketAddress, proxy!.address()).getHostName())
-        endif
+        ProxyService.saveProxy(downloadHelper!.getProxy())
+        ProxyService.saveProxyCredentials(downloadHelper!.getProxyCredentials())
 
         rem unzips the zip file to the given directory
         #unzipArchive(zipFile!, new File(#pluginsHome!, projectName!))
@@ -400,6 +393,10 @@ class public PluginManagerLauncher
         methodret Boolean.TRUE
     methodend
 
+    method public Boolean installPlugin(URL url!, String projectName!)
+        methodret #installPlugin(url!,projectName!,null())
+    methodend
+
     method public String getTimestamp()
         declare SimpleDateFormat sdf!
 
@@ -407,44 +404,6 @@ class public PluginManagerLauncher
         sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
 
         methodret sdf!.format(new java.util.Date()) + " GMT"
-    methodend
-
-    rem /**
-    rem  * Donwload the file from the given URL and stores its content 
-    rem  * in the given file.
-    rem  * 
-    rem  * @param downloadURL! The URL to download from.
-    rem  * @param outputFile! The File in which to store the downloaded content.
-    rem  */   
-    method public void downloadFile(URLConnection connection!, File outputFile!)
-        seterr downloadFile_ErrorHandler
-            declare OutputStream outputStream!
-            outputStream! = new BufferedOutputStream(new FileOutputStream(outputFile!))
-
-            declare InputStream inputStream!
-            inputStream! = connection!.getInputStream()
-
-            rem Hack to create a byte[1024] in BBj
-            declare ByteArrayOutputStream bos!
-            bos! = new ByteArrayOutputStream(1024)
-            for i=0 to 1024-1
-                bos!.write(0)
-            next i
-            bytes! = bos!.toByteArray()
-
-            rem reading from the input stream(=URL)
-            byteRead = inputStream!.read(bytes!)
-            while (byteRead <> -1)
-                rem writing to the output stream(=File)
-                outputStream!.write(bytes!, 0, byteRead)
-                byteRead = inputStream!.read(bytes!)
-            wend
-
-        downloadFile_ErrorHandler:
-            rem closing the streams
-            inputStream!.close(err=*next)
-            outputStream!.close(err=*next)
-            bos!.close(err=*next)
     methodend
 
     rem /**
@@ -506,73 +465,6 @@ class public PluginManagerLauncher
     methodend
 
     rem /**
-    rem  * Returns true if a newer version of the Package Manager plugin 
-    rem  * is available, false otherwise.
-    rem  */
-    method public Boolean isPluginManagerUpdateAvailable()
-        ch = unt
-        open(ch) str(#pluginsHome!) + File.separator + "PluginManager" + File.separator + "install.json"
-        read record(ch, siz=1024) json$
-        close(ch)
-
-        declare JsonParser jsonParser!
-        jsonParser! = new JsonParser()
-
-        declare JsonObject jsonObject!
-        jsonObject! = jsonParser!.parse(json$).getAsJsonObject()
-
-        methodret #isBBjPluginUpdateAvailable("https://api.github.com/repos/BBj-Plugins/PluginManager", jsonObject!.get("last_change"))
-    methodend
-
-    method public Boolean isBBjPluginUpdateAvailable(String apiURL!, String lastChange!)
-        url! = new URL(apiURL!)
-
-        connection! = cast(HttpURLConnection,url!.openConnection())
-        connection!.setRequestMethod("GET")
-        connection!.setRequestProperty("Accept", "appliation/json")
-        connection!.setRequestProperty("Accept","v3")
-        rem connection!.setRequestProperty("If-Modified-Since", lastChange!)
-
-        response = connection!.getResponseCode()
-        rem check if not modified
-        if(response = 304) then
-            methodret Boolean.FALSE
-        endif
-
-        if(response <> 200) then
-            throw "The Server returned an unknown return code", 255
-        endif
-
-        declare JsonParser jsonParser!
-        jsonParser! = new JsonParser()
-
-        declare JsonReader jsonReader!
-        jsonReader!  = new JsonReader(new InputStreamReader(connection!.getInputStream()))
-
-        declare JsonObject jsonObject!
-        jsonObject! = jsonParser!.parse(jsonReader!).getAsJsonObject()
-
-        remoteLastChanged! = jsonObject!.get("pushed_at").getAsString()
-
-        declare SimpleDateFormat sdf!
-
-        rem 2017-08-10T13:10:07Z
-        remoteLastChanged! = remoteLastChanged!.replaceAll("T", " ")
-        remoteLastChanged! = remoteLastChanged!.replaceAll("Z", "")
-
-        sdf! = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ENGLISH)
-        sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-
-        declare java.util.Date remoteLastChangedDate!
-        remoteLastChangedDate! = sdf!.parse(remoteLastChanged!)
-
-        sdf! = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", java.util.Locale.ENGLISH)
-        sdf!.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-
-        methodret remoteLastChangedDate!.after(sdf!.parse(lastChange!))
-    methodend
-
-    rem /**
     rem  * Updates the locally installed PluginManager BBj Plugin.
     rem  */
     method public void updatePluginManager()
@@ -581,111 +473,402 @@ class public PluginManagerLauncher
 
 classend
 
+rem TODO - DownloadHelper
+class public DownloadHelper
+
+    field public URL DownloadURL!
+    field public File OutputFile!
+    field public String DownloadError! = null()
+    field public HttpResponse HttpResponse! = null()
+    field public UsernamePasswordCredentials SiteCredentials!
+
+    field public HttpHost Proxy!
+    field public UsernamePasswordCredentials ProxyCredentials!
+
+    method public DownloadHelper()
+    methodend
+    
+    method public void download(Boolean useProxy!)
+        #DownloadError! = null()
+        #HttpResponse! = null()
+
+        seterr downloadFileErrorHandler
+
+            declare HttpClient httpClient!
+            httpClient! = #getHttpClient(useProxy!)
+
+            rem Hanlding the request
+            declare HttpGet request!
+            request! = new HttpGet(#DownloadURL!.toString())
+            request!.setConfig(#getRequestConfig(5000))
+
+            rem Adding the basic authentication header
+            #addHeaderCredentials(request!)
+
+            #HttpResponse! = httpClient!.execute(request!)
+
+            if #HttpResponse!.getStatusLine().getStatusCode() <> 200 then
+                #DownloadError! = "Error Downloading the file: " + str(response!)
+            endif
+            
+            methodret 
+
+        downloadFileErrorHandler:
+            #DownloadError! = "Error " + str(err) + " " + errmes(-1)
+    methodend
+    
+    method public InputStream getResponseInputStream()
+        if !#wasDownloadSuccessful() then
+            methodret
+        endif
+        
+        declare HttpEntity entity!
+        entity! = #HttpResponse!.getEntity()
+        
+        methodret entity!.getContent()
+    methodend
+    
+    rem /**
+    rem  * Downloads the file from the specified download url.
+    rem  * The boolean parameter is used to specify whether the download
+    rem  * should use the defined proxy or the system properties.
+    rem  * 
+    rem  * @param useProxy! The boolean value indicating whether to use the 
+    rem  *                  defined proxy or the system properties
+    rem  */
+    method public void downloadFile(Boolean useProxy!)
+        #download(useProxy!)
+        
+        if !#wasDownloadSuccessful() then
+            methodret
+        endif
+        
+        declare HttpEntity entity!
+        entity! = #HttpResponse!.getEntity()
+
+        if entity! <> null() then
+            name! = #HttpResponse!.getFirstHeader("Content-Disposition").getValue()
+
+            stream! = new FileOutputStream(#OutputFile!)
+            entity!.writeTo(stream!)
+            stream!.close()
+        endif
+    methodend
+
+    method private void addHeaderCredentials(HttpGet request!)
+        if #SiteCredentials! = null() then
+            methodret
+        endif
+
+        declare Header header!
+        declare BasicScheme basicScheme!
+
+        basicScheme! =  new BasicScheme()
+        header! = basicScheme!.authenticate(#SiteCredentials!, request!)
+
+        request!.addHeader(header!)
+    methodend
+
+    rem /**
+    rem  * Returns true if the file download was successful,
+    rem  * false otherwise.
+    rem  * 
+    rem  * @return true when the download was successful, false otherwise. 
+    rem  */
+    method public Boolean wasDownloadSuccessful()
+        if #DownloadError! = null() AND #HttpResponse! <> null() then
+            methodret Boolean.TRUE
+        endif
+
+        methodret Boolean.FALSE
+    methodend
+
+    rem /**
+    rem  * Returns true if a connection could be established with the 
+    rem  * download url, false otherwise. The given boolean value defines
+    rem  * whether to use the defined proxy or if the system properties
+    rem  * should be used.
+    rem  * 
+    rem  * @param useProxy The boolean value indicating whether to use the defined proxy or not.
+    rem  * @return true if the site can be reached, false otherwise.
+    rem  */
+    method public Boolean isSiteReachable(Boolean useProxy!)
+        declare HttpClient httpClient!
+        httpClient! = #getHttpClient(useProxy!)
+
+        rem Hanlding the request
+        declare HttpGet request!
+        request! = new HttpGet(#DownloadURL!.toString())
+        request!.setConfig(#getRequestConfig(1000))
+
+        rem Adding the basic authentication header
+        #addHeaderCredentials(request!)
+
+        declare HttpResponse response!
+        response! = httpClient!.execute(request!, err=*next)
+
+        if response! = null() OR response!.getStatusLine().getStatusCode() <> 200 then
+            methodret Boolean.FALSE
+        endif
+
+        methodret Boolean.TRUE
+    methodend
+
+    rem /**
+    rem  * Returns a http client object using either the defined 
+    rem  * proxy or the system properties depending on the value of the
+    rem  * useProxy parameter.
+    rem  * 
+    rem  * @param useProxy! The boolean value indicating whether to use the
+    rem  *                  defined proxy or the system properties
+    rem  */
+    method private HttpClient getHttpClient(Boolean useProxy!)
+        declare HttpClientBuilder httpClientBuilder!
+        httpClientBuilder! = HttpClientBuilder.create()
+
+        if useProxy! then
+            if #Proxy! <> null() then
+                if #ProxyCredentials! <> null() then
+                    declare AuthScope authScope!
+                    declare BasicCredentialsProvider basicCredentialsProvider!
+
+                    authScope! = new AuthScope(#Proxy!.getHostName(), #Proxy!.getPort())
+
+                    basicCredentialsProvider! = new BasicCredentialsProvider()
+                    basicCredentialsProvider!.setCredentials(authScope!, #ProxyCredentials!)
+
+                    httpClientBuilder!.setDefaultCredentialsProvider(basicCredentialsProvider!)
+                endif
+
+                httpClientBuilder!.setProxy(#Proxy!)
+            endif
+        else
+            httpClientBuilder!.useSystemProperties()
+        endif
+
+        methodret httpClientBuilder!.build()
+    methodend
+
+    rem /**
+    rem  * Returns a request configuration object with the given timeout.
+    rem  * 
+    rem  * @param timeout 
+    rem  */
+    method private RequestConfig getRequestConfig(BBjNumber timeout)
+        declare RequestConfig.Builder requestConfigBuilder!
+
+        requestConfigBuilder! = RequestConfig.custom()
+        requestConfigBuilder!.setSocketTimeout(timeout)
+        requestConfigBuilder!.setConnectTimeout(timeout)
+        requestConfigBuilder!.setConnectionRequestTimeout(timeout)
+
+        methodret requestConfigBuilder!.build()
+    methodend
+
+classend
+
+rem /**
+rem  * The ProxyConfigurationWindow is used to display the user 
+rem  * a window with required proxy information he needs to specify 
+rem  * in order to download the PluginManager via proxy.
+rem  */
 class public ProxyConfigurationWindow
 
     field private BBjNumber port
-    field private String hostname!
-    field private Proxy.Type proxyType!
+    field private String    hostname!
+    field private String    username!
+    field private String    password!
+    field private Boolean   credentialsRequired!
 
-    field private BBjInputN inpnPort!
-    field private BBjInputE inpeHostname!
+    field private BBjInputN   inpnPort!
+    field private BBjInputE   inpeHostname!
+    field private BBjInputE   inpeUsername!
+    field private BBjEditBox  edbxPassword!
+    field private BBjCheckBox chbNoCredentials!
+
     field private Boolean dialogCanceled!
     field private BBjTopLevelWindow window!
-    field private BBjListButton lbProxyType!
 
+    rem /**
+    rem  * The constructor of the ProxyConfigurationWindow
+    rem  */
     method public ProxyConfigurationWindow()
+        #dialogCanceled! = Boolean.FALSE
+        #credentialsRequired! = Boolean.FALSE
     methodend
 
+    rem /**
+    rem  * Initializes the ProxyConfigurationWindow and its controls.
+    rem  */
     method private void init()
         declare BBjSysGui sysGui!
         sysGui! = BBjAPI().openSysGui("X0")
 
         context = sysGui!.getAvailableContext()
-        #window! = sysGui!.addWindow(200, 200, 275, 150, "Proxy Configuration", $00000012$)
+        #window! = sysGui!.addWindow(context, 200, 200, 300, 230, "Proxy Configuration", $00010012$)
         #window!.setCallback(BBjAPI.ON_CLOSE, #this!, "closeWindow")
 
         id = #window!.getAvailableControlID()
-        #window!.addStaticText(id, 10, 15, 75, 20, "Proxy Type: ", $8000$)
+        #window!.addStaticText(id, 10, 15, 75, 20, "Hostname: ", $8000$)
 
         id = #window!.getAvailableControlID()
-        #lbProxyType! = #window!.addListButton(id, 95, 15-4, 150, 20, "")
-        #lbProxyType!.addItem("DIRECT")
-        #lbProxyType!.addItem("HTTP")
-        #lbProxyType!.addItem("SOCKS")
-        #lbProxyType!.selectIndex(0)
-        #lbProxyType!.setSize(150,100)
+        #inpeHostname! = #window!.addInputE(id, 95, 15-4, 150, 20, "")
 
         id = #window!.getAvailableControlID()
-        #window!.addStaticText(id, 10, 45, 75, 20, "Hostname: ", $8000$)
+        #window!.addStaticText(id, 10, 45, 75, 20, "Port: ", $8000$)
 
         id = #window!.getAvailableControlID()
-        #inpeHostname! = #window!.addInputE(id, 95, 45-4, 150, 20, "")
+        #inpnPort! = #window!.addInputN(id, 95, 45-4, 150, 20, "")
 
         id = #window!.getAvailableControlID()
-        #window!.addStaticText(id, 10, 75, 75, 20, "Port: ", $8000$)
+        #window!.addStaticText(id, 10, 95, 75, 20, "Username: ", $8000$)
 
         id = #window!.getAvailableControlID()
-        #inpnPort! = #window!.addInputN(id, 95, 75-4, 150, 20, "")
+        #inpeUsername! = #window!.addInputE(id, 95, 95-4, 150, 20, "")
+
+        id = #window!.getAvailableControlID()
+        #window!.addStaticText(id, 10, 125, 75, 20, "Password: ", $8000$)
+
+        id = #window!.getAvailableControlID()
+        #edbxPassword! = #window!.addEditBox(id, 95, 125-4, 150, 20, "", $0400$)
+
+        id = #window!.getAvailableControlID()
+        #chbNoCredentials! = #window!.addCheckBox(id, 10, 150, 200, 20, "No credentials required")
+        #chbNoCredentials!.setSelected(Boolean.TRUE)
+        #enableCredentialsInputControls(Boolean.FALSE)
+        #chbNoCredentials!.setCallback(BBjAPI.ON_CHECK_ON, #this!, "noCredentialsChecked")
+        #chbNoCredentials!.setCallback(BBjAPI.ON_CHECK_OFF, #this!, "noCredentialsUnchecked")
 
         declare BBjButton btnOK!
         id = #window!.getAvailableControlID()
-        btnOK! = #window!.addButton(id, 55, 115, 100, 25, "OK")
+        btnOK! = #window!.addButton(id, 80, 195, 100, 25, "OK")
         btnOK!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "performOK")
 
         declare BBjButton btnCancel!
         id = #window!.getAvailableControlID()
-        btnCancel! = #window!.addButton(id, 165, 115, 100, 25, "Cancel")
+        btnCancel! = #window!.addButton(id, 190, 195, 100, 25, "Cancel")
         btnCancel!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "performCancel")
     methodend
 
+    rem /**
+    rem  * Enables the proxy credentials input controls if the given value is
+    rem  * true, else the controls will be disabled.
+    rem  * 
+    rem  * @param enable! The boolean value used to enable the controls.
+    rem  */
+    method public void enableCredentialsInputControls(Boolean enable!)
+        #inpeUsername!.setEnabled(enable!)
+        #edbxPassword!.setEnabled(enable!)
+    methodend
+
+    rem /**
+    rem  * The event handler for the credentials required checkbox's 
+    rem  * check event.
+    rem  * 
+    rem  * @param event! The event that gets thrown when the user checks the checkbox
+    rem  */
+    method public void noCredentialsChecked(BBjCheckOnEvent event!)
+        #enableCredentialsInputControls(Boolean.FALSE)
+    methodend
+
+    rem /**
+    rem  * The event handler for the credentials required checkbox's 
+    rem  * uncheck event.
+    rem  * 
+    rem  * @param event! The event that gets thrown when the user unchecks the checkbox
+    rem  */
+    method public void noCredentialsUnchecked(BBjCheckOffEvent event!)
+        #enableCredentialsInputControls(Boolean.TRUE)
+    methodend
+
+    rem /**
+    rem  * Returns TRUE if the dialog was closed by 
+    rem  * clicking the cancel button or by closing it
+    rem  * using the window's close box. Returns FALSE
+    rem  * otherwise.
+    rem  * 
+    rem  * @return true if the diallog was cancelled, false otherwise.
+    rem  */
     method public Boolean dialogCanceled()
         methodret #dialogCanceled!
     methodend
 
     method public void performOK(BBjButtonPushEvent event!)
-        #hostname! = #inpeHostname!.getText()
         #port = num(#inpnPort!.getText())
+        #hostname! = #inpeHostname!.getText()
+        #username! = #inpeUsername!.getText()
+        #password! = #edbxPassword!.getText()
 
-        proxyType! = #lbProxyType!.getItemAt(#lbProxyType!.getSelectedIndex())
-        if(proxyType! = "DIRECT") then
-            #proxyType! = Proxy.Type.DIRECT
-        endif
-
-        if(proxyType! = "HTTP") then
-            #proxyType! = Proxy.Type.HTTP
-        endif
-
-        if(proxyType! = "SOCKS") then
-            #proxyType! = Proxy.Type.SOCKS
-        endif
+        #credentialsRequired! = !#chbNoCredentials!.isSelected()
 
         #close(#window!)
     methodend
 
+    rem /**
+    rem  * Returns true if the proxy authentication requires
+    rem  * credentials, false otherwise.
+    rem  * 
+    rem  * @return true if the proxy required authentication, false otherwise. 
+    rem  */
+    method public Boolean areCredentialsRequired()
+        methodret #credentialsRequired!
+    methodend
+
+    rem /**
+    rem  * The event handler method for the cancel button's 
+    rem  * on button push event.
+    rem  * 
+    rem  * @param event! The event thrown when the user clicks the cancel button.
+    rem  */
     method public void performCancel(BBjButtonPushEvent event!)
         #dialogCanceled! = Boolean.TRUE
         #close(#window!)
     methodend
 
+    rem /**
+    rem  * Returns the entered hostname.
+    rem  * 
+    rem  * @return the hostname
+    rem  */
     method public String getHostName()
         methodret #hostname!
     methodend
 
+    rem /**
+    rem  * Returns the entered port.
+    rem  * 
+    rem  * @return the port.
+    rem  */
     method public BBjNumber getPort()
         methodret #port
     methodend
 
-    method public Proxy.Type getProxyType()
-        methodret #proxyType!
+    rem /**
+    rem  * Returns the entered username.
+    rem  * 
+    rem  * @return the username
+    rem  */
+    method public String getUsername()
+        methodret #username!
     methodend
 
+    rem /**
+    rem  * Returns the entered password.
+    rem  * 
+    rem  * @return the password
+    rem  */
+    method public String getPassword()
+        methodret #password!
+    methodend
+
+    rem /**
+    rem  * Opens the ProxyConfigurationWindow. 
+    rem  */
     method public void open()
         if(#window! = null()) then
             #init()
             bbjapi().setCustomEventCallback("CloseProxyConfiguratioWindowEvent", "endOpen")
         endif
-
-        #resetContent()
 
         #window!.setVisible(1)
 
@@ -694,24 +877,124 @@ class public ProxyConfigurationWindow
         endOpen:
     methodend
 
-    method private void resetContent()
-        #hostname! = null()
+    rem /**
+    rem  * Resets the window's saved values.
+    rem  */
+    method public void resetContent()
         #port = 0
-        #proxyType! = null()
+        #hostname! = null()
+        #username! = null()
+        #password! = null()
 
-        #inpeHostname!.setText("")
         #inpnPort!.setText("")
-        #lbProxyType!.selectIndex(0)
+        #inpeHostname!.setText("")
+        #inpeUsername!.setText("")
+        #edbxPassword!.setText("")
+
+        #chbNoCredentials!.setSelected(Boolean.TRUE)
+        #enableCredentialsInputControls(Boolean.FALSE)
     methodend
 
+    rem /**
+    rem  * Closes the given window.
+    rem  * 
+    rem  * @param window! The window to close.
+    rem  */
     method private void close(BBjTopLevelWindow window!)
         window!.setVisible(0)
         bbjapi().postCustomEvent("CloseProxyConfiguratioWindowEvent", "")
     methodend
 
+    rem /**
+    rem  * The event handler method for the main window's on close event.
+    rem  * 
+    rem  * @param event! The event which gets thrown when the user clicks 
+    rem  *               on the window's close box
+    rem  */
     method public void closeWindow(BBjCloseEvent event!)
         #dialogCanceled! = Boolean.TRUE
         #close(cast(BBjTopLevelWindow, event!.getControl()))
+    methodend
+
+classend
+
+class public ProxyService
+
+    field private static String PROXY_PORT_PROPERTY!     = "PluginManager_ProxyPort"
+    field private static String PROXY_USERNAME_PROPERTY! = "PluginManager_ProxyUsername"
+    field private static String PROXY_PASSWORD_PROPERTY! = "PluginManager_ProxyPassword"
+    field private static String PROXY_HOSTNAME_PROPERTY! = "PluginManager_ProxyHostname"
+
+    rem /**
+    rem  * Saving the given proxy credentials into the user properties
+    rem  */
+    method public static void saveProxyCredentials(UsernamePasswordCredentials proxyCredentials!)
+        proxyUsername! = proxyCredentials!.getUserName(err=*next)
+        proxyPassowrd! = proxyCredentials!.getPassword(err=*next)
+
+        declare BBjThinClient thinClient!
+        thinClient! = bbjapi().getThinClient()
+
+        thinClient!.setUserProperty(#PROXY_USERNAME_PROPERTY!, proxyUsername!)
+        thinClient!.setUserProperty(#PROXY_PASSWORD_PROPERTY!, proxyPassowrd!)
+    methodend
+
+    rem /**
+    rem  * Saving the given proxy's information into the user properties
+    rem  */
+    method public static void saveProxy(HttpHost proxy!)
+        proxyPort! = str(proxy!.getPort(err=*next))
+        proxyHostname! = proxy!.getHostName(err=*next)
+
+        declare BBjThinClient thinClient!
+        thinClient! = bbjapi().getThinClient()
+
+        thinClient!.setUserProperty(#PROXY_PORT_PROPERTY!, proxyPort!)
+        thinClient!.setUserProperty(#PROXY_HOSTNAME_PROPERTY!, proxyHostname!)
+    methodend
+
+    rem /**
+    rem  * Returns the last saved proxy as HttpHost object, or
+    rem  * null if there is no last proxy.
+    rem  * 
+    rem  * @return the last saved proxy or null.
+    rem  */
+    method public static HttpHost getProxyFromUserProperties()
+        declare HttpHost proxy!
+        declare BBjThinClient thinClient!
+
+        thinClient! = bbjapi().getThinClient()
+
+        proxyPort! = thinClient!.getUserProperty(#PROXY_PORT_PROPERTY!, err=*next)
+        proxyHostname! = thinClient!.getUserProperty(#PROXY_HOSTNAME_PROPERTY!, err=*next)
+
+        if proxyPort! = null() OR proxyHostname! = null() then
+            methodret proxy!
+        endif
+
+        methodret new HttpHost(proxyHostname!, num(proxyPort!))
+    methodend
+
+    rem /**
+    rem  * Returns the saved credentials for the last saved proxy as 
+    rem  * UsernamePasswordCredentials object or null if there are no saved credentials.
+    rem  * 
+    rem  * @return the credentials saved for the last proxy or null.
+    rem  */
+    method public static UsernamePasswordCredentials getProxyCredentialsFromUserProperties()
+        declare BBjThinClient thinClient!
+        declare UsernamePasswordCredentials proxyCredentials!
+
+        thinClient! = bbjapi().getThinClient()
+
+        proxyUsername! = thinClient!.getUserProperty(#PROXY_USERNAME_PROPERTY!, err=*next)
+        proxyPassword! = thinClient!.getUserProperty(#PROXY_PASSWORD_PROPERTY!, err=*next)
+
+        if proxyUsername! = null() OR proxyPassword! = null() then
+            methodret proxyCredentials!
+        endif
+
+        methodret new UsernamePasswordCredentials(proxyUsername!, proxyPassword!)
     methodend
 
 classend
@@ -727,7 +1010,7 @@ if(!pm!.isPluginManagerInstalled()) then
 else
     rem if(pm!.isPluginManagerUpdateAvailable()) then
         print "Updating the PluginManager plugin"
-        pm!.updatePluginManager()      
+        pm!.updatePluginManager()
     rem endif
 endif
 

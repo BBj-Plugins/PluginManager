@@ -1,7 +1,7 @@
 use ::PluginManager/PluginManager.bbj::PluginManager
 use ::PluginManager/PluginManagerUI.bbj::PluginManagerUI
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
-use ::PluginManager/src/GithubCredentialWindow.bbj::GithubCredentialWindow
+use ::PluginManager/src/gui/GithubCredentialWindow.bbj::GithubCredentialWindow
 
 use java.lang.StringBuilder
 

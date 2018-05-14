@@ -338,6 +338,11 @@ class public PluginManager
         else
             installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
         endif
+        
+        if installedPlugin! = null() then
+            a = msgbox("Failed to install the selected plugin")
+            methodret 
+        endif
 
         #pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
         #pluginFolderParser!.setHasDemo(installedPlugin!)
@@ -465,7 +470,9 @@ class public PluginManager
 
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
+                
         #pluginFolderParser!.setHasDemo(installedPlugin!)
+        #pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
 
         plugin!.setInstallationDate(new java.util.Date())
         plugin!.setLastChangedDate(tag!.getLastChangeDate())

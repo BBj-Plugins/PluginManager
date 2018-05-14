@@ -1,9 +1,3 @@
-use ::PluginManager/src/Tag.bbj::Tag
-use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
-use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
-
-use ::PluginManagerLauncher.bbj::PluginManagerLauncher
-
 use java.io.File
 use java.io.FileWriter
 
@@ -44,6 +38,15 @@ use com.google.gson.JsonElement
 use com.google.gson.JsonFactory
 use com.google.gson.stream.JsonReader
 
+use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+
+use ::PluginManagerLauncher.bbj::PluginManagerLauncher
+
+use org.apache.http.HttpHost
+use org.apache.http.auth.UsernamePasswordCredentials
+
 use ::PluginManager/src/GithubApiService.bbj::GithubApiService
 
 class public InstallationService
@@ -61,24 +64,19 @@ class public InstallationService
     methodend
 
     method public InstalledBBjPlugin installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!, String username!, String password!)
-        downloadURL! = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
-        projectName! = remotePlugin!.getName()
-
         declare File pluginDirectory!
-        pluginDirectory! = new File(#localPluginDirectory!, projectName!)
+        pluginDirectory! = new File(#localPluginDirectory!, remotePlugin!.getName())
+                
+        url! = new URL(remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip")
 
-        url$ = remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip"
-
+        declare UsernamePasswordCredentials credentials!
         if(username! <> null() AND password! <> null()) then
-            declare GithubApiService service!
-            service! = new GithubApiService()
-            authToken! = service!.getAuthToken(username!, password!)
+            credentials! = new UsernamePasswordCredentials(username!, password!)
+        endif
 
-            declare URLConnection connection!
-            connection! = service!.getConnection(new URL(url$) , authToken!)
-            #pluginManagerLauncher!.installPlugin(connection!, remotePlugin!.getName())
-        else
-            #pluginManagerLauncher!.installPlugin(url$, remotePlugin!.getName())
+        installSuccess! = #pluginManagerLauncher!.installPlugin(url!, remotePlugin!.getName(), credentials!)
+        if !installSuccess! then
+            methodret null()
         endif
 
         remotePlugin!.setInstalled(Boolean.TRUE)

@@ -103,11 +103,14 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
         #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
         #tabCtrl!.addTab("Available Plugins", #remoteTab!.getChildWindow())
         
-        bbjapi().setCustomEventCallback(#INSTALL_PLUGIN_REQUEST!, #this!, "installPluginRequest")
-        bbjapi().setCustomEventCallback(#RUN_DEMO_PROGRAM!, #this!, "runDemoProgram")
-        bbjapi().setCustomEventCallback(#ADD_CUSTOM_PLUGIN!, #this!, "addCustomPlugin")
-        bbjapi().setCustomEventCallback(#REMOVE_CUSTOM_PLUGIN!, #this!, "removeCustomRemotePlugin")
-        bbjapi().setCustomEventCallback(#RUN_CONFIGURATION_PROGRAM!, #this!, "runConfigurationProgram")
+        declare BBjAPI bbjapi!
+        bbjapi! = BBjAPI()
+        
+        bbjapi!.setCustomEventCallback(#INSTALL_PLUGIN_REQUEST!, #this!, "installPluginRequest")
+        bbjapi!.setCustomEventCallback(#RUN_DEMO_PROGRAM!, #this!, "runDemoProgram")
+        bbjapi!.setCustomEventCallback(#ADD_CUSTOM_PLUGIN!, #this!, "addCustomPlugin")
+        bbjapi!.setCustomEventCallback(#REMOVE_CUSTOM_PLUGIN!, #this!, "removeCustomRemotePlugin")
+        bbjapi!.setCustomEventCallback(#RUN_CONFIGURATION_PROGRAM!, #this!, "runConfigurationProgram")
 
         #sysGui!.setRepaintEnabled(1)
     methodend

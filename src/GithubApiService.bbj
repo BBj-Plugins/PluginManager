@@ -11,13 +11,24 @@ use java.lang.StringBuilder
 
 use java.net.HttpURLConnection
 
+use org.apache.http.auth.UsernamePasswordCredentials
+
+use ::PluginManagerLauncher.bbj::ProxyService
+use ::PluginManagerLauncher.bbj::DownloadHelper
+
 class public GithubApiService
+
+    field private String GITHUB_URL! = "https://github.com/"
+    field private String GITHUB_API_URL! = "https://api.github.com/repos/"
+    
+    field private String RATE_LIMIT_URL! = "https://api.github.com/rate_limit"
+    field private String DOWNLOAD_URL_PREFIX! = "https://raw.githubusercontent.com/"
 
     method public GithubApiService()
     methodend
 
     method public String getDownloadURLPrefix()
-        methodret "https://raw.githubusercontent.com/"
+        methodret #DOWNLOAD_URL_PREFIX!
     methodend
 
     rem /**
@@ -25,53 +36,17 @@ class public GithubApiService
     rem  * The method calls the https://api.github.com/rate_limit
     rem  */
     method public Boolean areGithubCredentialsValid(String username!, String password!)
-        authToken! = #getAuthToken(username!, password!)
-
-        declare URL url!
-        url! = new URL("https://api.github.com/rate_limit")
-
-        declare HttpURLConnection connection!
-        connection! = #getConnection(url!, authToken!)
-
-        response = connection!.getResponseCode()
-        connection!.disconnect()
-
-        if(response = 200) then
-            methodret Boolean.TRUE
-        endif
-
-        methodret Boolean.FALSE
-    methodend
-
-    method public String getAuthToken(String username!, String password!)
-        if(username! <> null() AND password! <> null()) then
-            methodret new String(Base64.getEncoder().encode(username! + ":" + password!))
-        endif
-        methodret null()
+        #isRepositoryAccessible(#RATE_LIMIT_URL!,username!,password!)
     methodend
 
     method private String getGithubApiURL(String repoURL!)
-        if(!repoURL!.startsWith("https://github.com/")) then
+        if(!repoURL!.startsWith(#GITHUB_URL!)) then
             throw "Invalid Github Repository URL", 255
         endif
 
-        repoURL! = repoURL!.replace("https://github.com/", "https://api.github.com/repos/")
+        repoURL! = repoURL!.replace(#GITHUB_URL!, #GITHUB_API_URL!)
 
         methodret repoURL!
-    methodend
-
-    method public HttpURLConnection getConnection(URL url!, String authToken!)
-        declare HttpURLConnection connection!
-        connection! = cast(HttpURLConnection,url!.openConnection())
-        connection!.setRequestMethod("GET")
-        connection!.setRequestProperty("Accept", "appliation/json")
-        connection!.setRequestProperty("Accept","v3")
-
-        if(authToken! <> null()) then
-            connection!.setRequestProperty("Authorization", "Basic " + authToken!)
-        endif
-
-        methodret connection!
     methodend
 
     method public Boolean isRepositoryAccessible(String repoURL!)
@@ -79,42 +54,24 @@ class public GithubApiService
     methodend
 
     method public Boolean isRepositoryAccessible(String repoURL!, String username!, String password!)
-        authToken! = #getAuthToken(username!,password!)
-
-        declare URL url!
-        url! = new URL(#getGithubApiURL(repoURL!))
-
-        declare HttpURLConnection connection!
-        connection! = #getConnection(url!, authToken!)
-
-        response = connection!.getResponseCode()
-        connection!.disconnect()
-
-        if(response = 200) then
-            methodret Boolean.TRUE
+        declare DownloadHelper downloadHelper!
+        downloadHelper! = new DownloadHelper()
+        
+        downloadHelper!.setDownloadURL(repoURL!)
+        downloadHelper!.setSiteCredentials(new UsernamePasswordCredentials(username!, password!))
+        
+        declare HttpHost proxy!
+        proxy! = ProxyService.getProxyFromUserProperties()
+        if proxy! <> null() then
+            downloadHelper!.setProxy(proxy!)
+            
+            declare UsernamePasswordCredentials proxyCredentials!
+            proxyCredentials! = ProxyService.getProxyCredentialsFromUserProperties()
+            downloadHelper!.setProxyCredentials(proxyCredentials!)
+            methodret downloadHelper!.isSiteReachable(Boolean.TRUE)
         endif
-
-        methodret Boolean.FALSE
-    methodend
-
-    method public String getProjectJson(String repoUrl!, String username!, String password!)
-        authToken! = #getAuthToken(username!,password!)
-
-        declare URL url!
-        url! = new URL(#getGithubApiURL(repoUrl!))
-
-        declare HttpURLConnection connection!
-        connection! = #getConnection(url!, authToken!)
-
-        response = connection!.getResponseCode()
-        if(response <> 200) then
-            throw "An error occured while retriving the repository's JSON", 255
-        endif
-
-        json! = #getJsonFromStream(connection!.getInputStream())
-        connection!.disconnect()
-
-        methodret json!
+        
+        methodret downloadHelper!.isSiteReachable(Boolean.FALSE)
     methodend
 
     method public String getJson(String repoURL!)
@@ -122,21 +79,30 @@ class public GithubApiService
     methodend
 
     method public String getJson(String repoURL!, String username!, String password!)
-        authToken! = #getAuthToken(username!,password!)
-
-        declare URL url!
-        url! = new URL(repoURL!)
-
-        declare HttpURLConnection connection!
-        connection! = #getConnection(url!, authToken!)
-
-        response = connection!.getResponseCode()
-        if(response <> 200) then
-            throw "An error occured while retriving the repository's JSON", 255
+        declare DownloadHelper downloadHelper!
+        downloadHelper! = new DownloadHelper()
+        
+        downloadHelper!.setDownloadURL(repoURL!)
+        downloadHelper!.setSiteCredentials(new UsernamePasswordCredentials(username!, password!))
+        
+        declare HttpHost proxy!
+        proxy! = ProxyService.getProxyFromUserProperties()
+        if proxy! <> null() then
+            downloadHelper!.setProxy(proxy!)
+            
+            declare UsernamePasswordCredentials proxyCredentials!
+            proxyCredentials! = ProxyService.getProxyCredentialsFromUserProperties()
+            downloadHelper!.setProxyCredentials(proxyCredentials!)
+            downloadHelper!.downloadFile(Boolean.TRUE)
+        else
+            downloadHelper!.downloadFile(Boolean.FALSE)
         endif
-
-        json! = #getJsonFromStream(connection!.getInputStream())
-        connection!.disconnect()
+        
+        if !downloadHelper!.wasDownloadSuccessful() then
+            throw "An error occured while retriving the repository's JSON String: " + downloadHelper!.getDownloadError(), 255
+        endif
+        
+        json! = #getJsonFromStream(downloadHelper!.getResponseInputStream())
 
         methodret json!
     methodend
