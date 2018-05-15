@@ -42,7 +42,7 @@ use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 
-use ::PluginManagerLauncher.bbj::PluginManagerLauncher
+use ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher
 
 use org.apache.http.HttpHost
 use org.apache.http.auth.UsernamePasswordCredentials

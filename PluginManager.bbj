@@ -26,7 +26,7 @@ use ::PluginManager/src/AuthenticationService.bbj::AuthenticationService
 use ::PluginManager/src/CustomPluginListHandler.bbj::CustomPluginListHandler
 use ::PluginManager/src/InstalledPluginFolderParser.bbj::InstalledPluginFolderParser
 
-use ::PluginManagerLauncher.bbj::PluginManagerLauncher
+use ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher
 
 class public PluginManager
 

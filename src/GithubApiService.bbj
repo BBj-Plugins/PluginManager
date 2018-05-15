@@ -13,8 +13,8 @@ use java.net.HttpURLConnection
 
 use org.apache.http.auth.UsernamePasswordCredentials
 
-use ::PluginManagerLauncher.bbj::ProxyService
-use ::PluginManagerLauncher.bbj::DownloadHelper
+use ::PluginManager/update/PluginManagerLauncher.bbj::ProxyService
+use ::PluginManager/update/PluginManagerLauncher.bbj::DownloadHelper
 
 class public GithubApiService
 
