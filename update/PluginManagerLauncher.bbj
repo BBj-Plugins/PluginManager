@@ -153,15 +153,28 @@ class public PluginManagerLauncher
 
         rem create file object handles and compare the directories
         if !unbalancedPrefix then
-            declare File directory!
-
             declare Iterator it!
             it! = vect!.iterator()
 
-            while(it!.hasNext())
-                directory! = new File(cast(String, it!.next()))
+            pluginsHome$=pluginsHomePath!.replace("\","/")
+            if pos("Win"=info(0,0)) or pos("Mac"=info(0,0)) then 
+                ingoreCase = 1
+                pluginsHome$=cvs(pluginsHome$,8) 
+            endif
 
-                if(directory!.equals(#pluginsHome!)) then
+            while(it!.hasNext())
+                directory$ = ""
+                
+                directory  = unt
+                open (directory,err=*continue) cast(String, it!.next())
+                directory$ = fid(directory,err=*continue)(9)
+                close (directory)
+
+                if ingoreCase then
+                    directory$ = cvs(directory$,8) 
+                endif
+
+                if directory$ = pluginsHome$ then
                     methodret Boolean.TRUE
                 endif
             wend
