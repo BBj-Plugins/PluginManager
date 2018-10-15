@@ -73,7 +73,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.07
+    field public static BBjNumber ProgramVersion = 1.08
 
     method public PluginManagerLauncher()
         #init()
@@ -121,7 +121,7 @@ class public PluginManagerLauncher
         if prefixPaths!.contains("""") then
             rem counting the quotes to avoid parsing unbalanced prefixes
             for i = 0 to prefixPaths!.length() -1
-                if new String(prefixPaths!.charAt(i)) = """" then
+                if String.valueOf(prefixPaths!.charAt(i)) = """" then
                     quoteCounter = quoteCounter + 1
                 endif
             next i
