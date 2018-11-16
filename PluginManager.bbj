@@ -375,7 +375,11 @@ class public PluginManager
         #installedPlugins!.remove(installedPlugin!)
     methodend
 
-    method private Boolean isRemotePluginInstalled(RemoteBBjPlugin remotePlugin!, Tag tag!)
+    rem /**
+    rem  * Returns true if the given remote plugin with the given tag is installed,
+    rem  * false otherwise.
+    rem  */
+    method public Boolean isRemotePluginInstalled(RemoteBBjPlugin remotePlugin!, Tag tag!)
         remotePluginId = remotePlugin!.getID()
 
         declare Iterator it!
