@@ -264,8 +264,8 @@ class public RemotePluginTab
 
         control_width = 75
         control_height = 25
-        row_x = cw_width - control_width - (3 * space) - 5
-        row_y = cw_height - control_height - (3 * space) - 25
+        row_x = cw_width - control_width - (4 * space) - 5
+        row_y = cw_height - control_height - (4 * space) - 25
         cw_next_id =  childWindow!.getAvailableControlID()
         #btnInstallPlugin! = childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Install")
         #btnInstallPlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "installPluginButtonPush")
