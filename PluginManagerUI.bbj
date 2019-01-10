@@ -18,14 +18,13 @@ use java.text.SimpleDateFormat
 
 class public PluginManagerUI
 
-    field public static String ADD_CUSTOM_PLUGIN! = "ADD_CUSTOM_PLUGIN"
-    field public static String REMOVE_CUSTOM_PLUGIN! = "REMOVE_CUSTOM_PLUGIN"
-
-    field public static String RUN_DEMO_PROGRAM! = "RUN_DEMO_PROGRAM"
-    field public static String INSTALL_PLUGIN_END! = "INSTALL_PLUGIN_END"
-    field public static String INSTALL_PLUGIN_REQUEST!   = "INSTALL_PLUGIN_REQUEST"
-    field public static String UPDATE_PLUGIN_REQUEST!    = "UPDATE_PLUGIN_REQUEST"
-    field public static String UNINSTALL_PLUGIN_REQUEST! = "UNINSTALL_PLUGIN_REQUEST"
+    field public static String RUN_DEMO_PROGRAM!          = "RUN_DEMO_PROGRAM"
+    field public static String ADD_CUSTOM_PLUGIN!         = "ADD_CUSTOM_PLUGIN"
+    field public static String INSTALL_PLUGIN_END!        = "INSTALL_PLUGIN_END"
+    field public static String REMOVE_CUSTOM_PLUGIN!      = "REMOVE_CUSTOM_PLUGIN"
+    field public static String INSTALL_PLUGIN_REQUEST!    = "INSTALL_PLUGIN_REQUEST"
+    field public static String UPDATE_PLUGIN_REQUEST!     = "UPDATE_PLUGIN_REQUEST"
+    field public static String UNINSTALL_PLUGIN_REQUEST!  = "UNINSTALL_PLUGIN_REQUEST"
     field public static String RUN_CONFIGURATION_PROGRAM! = "RUN_CONFIGURATION_PROGRAM"
 
     field private PluginManager pluginManager!
@@ -54,7 +53,7 @@ class public PluginManagerUI
         #sysGui!.setRepaintEnabled(0)
 
         window_width = 1000
-        window_height = 600
+        window_height = 650
 
         declare java.awt.Rectangle screenBounds!
         screenBounds! = #sysGui!.getSystemMetrics().getScreenBounds()

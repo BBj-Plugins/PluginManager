@@ -294,8 +294,8 @@ class public InstalledPluginTab
 
         control_width = 75
         control_height = 25
-        row_x = cw_width - (2 * control_width) - (2 * space)
-        row_y = cw_height - control_height - (2 * space)
+        row_x = cw_width - (2 * control_width) - (3 * space)
+        row_y = cw_height - control_height - (3 * space)
         cw_next_id = childWindow!.getAvailableControlID()
         #btnUpdatePlugin! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x , row_y, control_width, control_height, "Update"))
         #btnUpdatePlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "updatePlugin")
