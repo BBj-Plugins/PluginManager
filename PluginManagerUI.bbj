@@ -436,6 +436,10 @@ if userInput$ <> "y" then
     goto prompt_for_bui_app_creation
 endif
 
+if admin! <> null() then
+    goto deploy_bui_app
+endif
+
 print "To deploy the PluginManager BUI application, a connection to the Basis admin base needs to be established."
 
 prompt_for_bbj_admin_credentials:
@@ -467,10 +471,12 @@ if deployer!.isPluginManagerDeployedAsBUI(admin!) then
     buiApp! = deployer!.getPluginManagerBuiApplication(admin!)
     print "The PluginManager was already deployed as BUI application."
     print "To run it, open the following URL in your browser: "
-    buiApp!.getUrl()
+    print buiApp!.getUrl()
 
     release 
 endif
+
+deploy_bui_app:
 
 rem Setting up the PluginManager BUI application
 buiApp! = deployer!.deployPluginManagerBuiApp(admin!)
