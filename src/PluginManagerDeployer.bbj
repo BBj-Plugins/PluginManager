@@ -41,10 +41,22 @@ class public PluginManagerDeployer
 	method public BBjAdminBuiApplication deployPluginManagerBuiApp(BBjAdminBase admin!)
 		scriptFilePath! = BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj", err=*next)
 		if scriptFilePath! = null() OR !scriptFilePath!.isEmpty() then
-    		rem find the script
+    		bbjHomePath! = System.getProperty("basis.BBjHome")
+        	bbjHome! = new File(bbjHomePath!)
+        	if(!bbjHome!.exists()) then
+           		throw "Could not find BBj Home", 255
+        	endif
+
+        	pluginsHome! = new File(bbjHome!, "plugins")
+        	if(!pluginsHome!.exists()) then
+            	throw "The plugin folder could not be found", 255
+        	endif
+
+        	scriptFile! = new File(pluginsHome!, "PluginManagerLauncher.bbj")
+        	scriptFilePath! = scriptFile!.getAbsolutePath()
 		endif
 
-		scriptFile! = new java.io.File(path!)
+		scriptFile! = new java.io.File(scriptFilePath!)
 		configFileName! = BBjAPI().getConfig().getConfigFileName()
 
 		buiApp! = admin!.createBuiApplication()
