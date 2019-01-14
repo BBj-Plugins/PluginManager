@@ -21,9 +21,9 @@ class public PluginManagerDeployer
 	methodend
 
 	method public BBjAdminBuiApplication getPluginManagerBuiApplication(BBjAdminBase admin!)
-		declare BBjAdminList buiAppList!
-		declare BBjAdminBuiApplication buiApp!
-		declare BBjAdminBuiConfiguration buiConf!
+		declare auto BBjAdminList buiAppList!
+		declare auto BBjAdminBuiApplication buiApp!
+		declare auto BBjAdminBuiConfiguration buiConf!
 		
 		buiConf! = admin!.getBuiConfiguration()
 		buiAppList! = buiConf!.getApplications()
