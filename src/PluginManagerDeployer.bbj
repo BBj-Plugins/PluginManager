@@ -26,12 +26,14 @@ class public PluginManagerDeployer
 		buiConf! = admin!.getBuiConfiguration()
 		buiAppList! = buiConf!.getApplications()
 
-		for i = 0 to buiAppList!.size() -1
-			buiApp! = buiAppList!.get(i)
-    		if buiApp!.getString(BBjAdminBuiApplication.NAME) = "PluginManager" then
-        		methodret buiApp!
-    		endif
-		next i
+		if buiAppList!.size() = 0 then
+			for i = 0 to buiAppList!.size() -1
+				buiApp! = buiAppList!.get(i)
+    			if buiApp!.getString(BBjAdminBuiApplication.NAME) = "PluginManager" then
+        			methodret buiApp!
+    			endif
+			next i
+		endif
 
 		methodret null()
 	methodend

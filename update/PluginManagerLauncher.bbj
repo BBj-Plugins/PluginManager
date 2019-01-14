@@ -73,7 +73,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.09
+    field public static BBjNumber ProgramVersion = 1.10
 
     method public PluginManagerLauncher()
         #init()
@@ -946,10 +946,12 @@ class public ProxyService
         proxyPassowrd! = proxyCredentials!.getPassword(err=*next)
 
         declare BBjThinClient thinClient!
-        thinClient! = bbjapi().getThinClient()
+        thinClient! = bbjapi().getThinClient(err=*next)
 
-        thinClient!.setUserProperty(#PROXY_USERNAME_PROPERTY!, proxyUsername!)
-        thinClient!.setUserProperty(#PROXY_PASSWORD_PROPERTY!, proxyPassowrd!)
+        if thinClient! = null() then
+            thinClient!.setUserProperty(#PROXY_USERNAME_PROPERTY!, proxyUsername!)
+            thinClient!.setUserProperty(#PROXY_PASSWORD_PROPERTY!, proxyPassowrd!)    
+        endif        
     methodend
 
     rem /**
@@ -960,10 +962,12 @@ class public ProxyService
         proxyHostname! = proxy!.getHostName(err=*next)
 
         declare BBjThinClient thinClient!
-        thinClient! = bbjapi().getThinClient()
+        thinClient! = bbjapi().getThinClient(err=*next)
 
-        thinClient!.setUserProperty(#PROXY_PORT_PROPERTY!, proxyPort!)
-        thinClient!.setUserProperty(#PROXY_HOSTNAME_PROPERTY!, proxyHostname!)
+        if thinClient! = null() then
+            thinClient!.setUserProperty(#PROXY_PORT_PROPERTY!, proxyPort!)
+            thinClient!.setUserProperty(#PROXY_HOSTNAME_PROPERTY!, proxyHostname!)
+        endif
     methodend
 
     rem /**
@@ -976,7 +980,10 @@ class public ProxyService
         declare HttpHost proxy!
         declare BBjThinClient thinClient!
 
-        thinClient! = bbjapi().getThinClient()
+        thinClient! = bbjapi().getThinClient(err=*next)
+        if thinClient! = null() then
+            methodret null()
+        endif
 
         proxyPort! = thinClient!.getUserProperty(#PROXY_PORT_PROPERTY!, err=*next)
         proxyHostname! = thinClient!.getUserProperty(#PROXY_HOSTNAME_PROPERTY!, err=*next)
@@ -998,7 +1005,10 @@ class public ProxyService
         declare BBjThinClient thinClient!
         declare UsernamePasswordCredentials proxyCredentials!
 
-        thinClient! = bbjapi().getThinClient()
+        thinClient! = bbjapi().getThinClient(err=*next)
+        if thinClient! = null() then
+            methodret null()
+        endif
 
         proxyUsername! = thinClient!.getUserProperty(#PROXY_USERNAME_PROPERTY!, err=*next)
         proxyPassword! = thinClient!.getUserProperty(#PROXY_PASSWORD_PROPERTY!, err=*next)
