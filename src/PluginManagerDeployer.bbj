@@ -2,6 +2,8 @@ use com.basis.api.BBjAdminList
 use com.basis.api.admin.BBjAdminBuiApplication
 use com.basis.api.admin.BBjAdminBuiConfiguration
 
+use java.io.File
+
 class public PluginManagerDeployer
 
 	method public PluginManagerDeployer()
@@ -56,7 +58,7 @@ class public PluginManagerDeployer
         	scriptFilePath! = scriptFile!.getAbsolutePath()
 		endif
 
-		scriptFile! = new java.io.File(scriptFilePath!)
+		scriptFile! = new File(scriptFilePath!)
 		configFileName! = BBjAPI().getConfig().getConfigFileName()
 
 		buiApp! = admin!.createBuiApplication()
