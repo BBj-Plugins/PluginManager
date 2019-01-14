@@ -16,7 +16,7 @@ use java.util.HashMap
 
 use java.text.SimpleDateFormat
 
-use ::src/PluginManagerDeployer.bbj::PluginManagerDeployer
+use ::PluginManager/src/PluginManagerDeployer.bbj::PluginManagerDeployer
 
 class public PluginManagerUI
 
