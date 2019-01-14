@@ -416,7 +416,7 @@ if admin! <> null() then
         buiApp! = deployer!.getPluginManagerBuiApplication(admin!)
         print "The PluginManager was already deployed as BUI application."
         print "To run it, open the following URL in your browser: "
-        buiApp!.getUrl()
+        print buiApp!.getUrl()
 
         release 
     endif
