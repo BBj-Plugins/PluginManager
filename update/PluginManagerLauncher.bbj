@@ -73,7 +73,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.10
+    field public static BBjNumber ProgramVersion = 1.11
 
     method public PluginManagerLauncher()
         #init()
@@ -98,12 +98,48 @@ class public PluginManagerLauncher
             sb!.append("Some plugins may not work properly because of this missing prefix entry." + $0A$)
             sb!.append("Do you want to add it?")
 
-            a = msgbox(sb!.toString(), 4)
+            if #inTerminalEnvironment() then
+                sb!.append(" (y/n) ")
+                    
+                prompt_user:
+                print sb!.toString()
 
-            if(a = 6) then
-                #addPluginsDirectoryToThePrefix()
-            endif
+                input userInput$
+                if userInput$ <> "y" AND userInput$ <> "n" then
+                    print "Invalid Input" + $0A$
+                    wait 1
+                    goto prompt_user
+                else
+                    if userInput$ = "y" then
+                        #addPluginsDirectoryToThePrefix()
+                    endif
+                endif
+            else
+                a = msgbox(sb!.toString(), 4)    
+                if(a = 6) then
+                    #addPluginsDirectoryToThePrefix()
+                endif
+            endif            
         endif
+    methodend
+
+    method private Boolean inTerminalEnvironment()
+        ok = 0; sys! = BBjAPI().openSysGui("X0", err=*next); ok = 1
+        if ok then
+            methodret Boolean.FALSE
+        endif
+
+        methodret Boolean.TRUE
+    methodend 
+
+    method private void informUser(String message!)
+        if !#inTerminalEnvironment() then
+            a = msgbox(message!)
+            methodret
+        endif
+
+        print message!
+        wait 2
     methodend
 
     rem /**
@@ -144,7 +180,7 @@ class public PluginManagerLauncher
                 noQuotePrefix! = noQuotePrefix! + prefixPaths!
                 vect!.addAll(Arrays.asList(noQuotePrefix!.split(" ")))
             else
-                a = msgbox("Your prefix contains an uneven amount of quotes, please review your prefix and remove the unnecessary quotes.")
+                #informUser("Your prefix contains an uneven amount of quotes, please review your prefix and remove the unnecessary quotes.")
                 unbalancedPrefix = 1
             endif
         else
@@ -267,7 +303,7 @@ class public PluginManagerLauncher
         pluginInstalled! = #installPlugin(new URL(pluginManagerDownloadURL$), "PluginManager")
 
         if(!pluginInstalled!) then
-            a = msgbox("The PluginManager could not be downloaded / installed. Please try again later or contact BASIS Support.")
+            #informUser("The PluginManager could not be downloaded / installed. Please try again later or contact BASIS Support.")
             release
         endif
 
@@ -346,6 +382,12 @@ class public PluginManagerLauncher
             if downloadHelper!.isSiteReachable(Boolean.TRUE) then
                 downloadHelper!.downloadFile(Boolean.TRUE)
             else
+                if #inTerminalEnvironment() then
+                    print "Failed to establish the connection to the github repository"
+                    print "Terminating"
+                    release
+                endif
+
                 declare HttpHost proxy!
                 declare ProxyConfigurationWindow window!
                 declare UsernamePasswordCredentials proxyCredentials!
@@ -948,7 +990,7 @@ class public ProxyService
         declare BBjThinClient thinClient!
         thinClient! = bbjapi().getThinClient(err=*next)
 
-        if thinClient! = null() then
+        if thinClient! <> null() then
             thinClient!.setUserProperty(#PROXY_USERNAME_PROPERTY!, proxyUsername!)
             thinClient!.setUserProperty(#PROXY_PASSWORD_PROPERTY!, proxyPassowrd!)    
         endif        
@@ -964,7 +1006,7 @@ class public ProxyService
         declare BBjThinClient thinClient!
         thinClient! = bbjapi().getThinClient(err=*next)
 
-        if thinClient! = null() then
+        if thinClient! <> null() then
             thinClient!.setUserProperty(#PROXY_PORT_PROPERTY!, proxyPort!)
             thinClient!.setUserProperty(#PROXY_HOSTNAME_PROPERTY!, proxyHostname!)
         endif
