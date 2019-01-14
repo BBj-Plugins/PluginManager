@@ -1,0 +1,58 @@
+use com.basis.api.BBjAdminList
+use com.basis.api.admin.BBjAdminBuiApplication
+use com.basis.api.admin.BBjAdminBuiConfiguration
+
+class public PluginManagerDeployer
+
+	method public PluginManagerDeployer()
+	methodend
+
+	method public Boolean isPluginManagerDeployedAsBUI(BBjAdminBase admin!)
+		declare BBjAdminBuiApplication buiApp!
+		buiApp! = #getPluginManagerBuiApplication(admin!)
+
+		if buiApp! = null() then
+			methodret Boolean.FALSE
+		endif
+		
+		methodret Boolean.TRUE
+	methodend
+
+	method public BBjAdminBuiApplication getPluginManagerBuiApplication(BBjAdminBase admin!)
+		declare BBjAdminList buiAppList!
+		declare BBjAdminBuiApplication buiApp!
+		declare BBjAdminBuiConfiguration buiConf!
+		
+		buiConf! = admin!.getBuiConfiguration()
+		buiAppList! = buiConf!.getApplications()
+
+		for i = 0 to buiAppList!.size() -1
+			buiApp! = buiAppList!.get(i)
+    		if buiApp!.getString(BBjAdminBuiApplication.NAME) = "PluginManager" then
+        		methodret buiApp!
+    		endif
+		next i
+
+		methodret null()
+	methodend
+
+	method public BBjAdminBuiApplication deployPluginManagerBuiApp(BBjAdminBase admin!)
+		scriptFilePath! = BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj", err=*next)
+		if scriptFilePath! = null() OR !scriptFilePath!.isEmpty() then
+    		rem find the script
+		endif
+
+		scriptFile! = new java.io.File(path!)
+		configFileName! = BBjAPI().getConfig().getConfigFileName()
+
+		buiApp! = admin!.createBuiApplication()
+		buiApp!.setString(BBjAdminBuiApplication.NAME, "PluginManager")
+		buiApp!.setString(BBjAdminBuiApplication.PROGRAM, scriptFile!.getAbsolutePath())
+		buiApp!.setString(BBjAdminBuiApplication.CONFIG_FILE, configFileName!)
+		buiApp!.setString(BBjAdminBuiApplication.WORKING_DIRECTORY , scriptFile!.getParentFile().getAbsolutePath())
+		buiApp!.commit()
+
+		methodret buiApp!
+	methodend
+
+classend

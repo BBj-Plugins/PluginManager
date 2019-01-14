@@ -16,6 +16,8 @@ use java.util.HashMap
 
 use java.text.SimpleDateFormat
 
+use ::src/PluginManagerDeployer.bbj::PluginManagerDeployer
+
 class public PluginManagerUI
 
     field public static String RUN_DEMO_PROGRAM!          = "RUN_DEMO_PROGRAM"
@@ -49,6 +51,8 @@ class public PluginManagerUI
     methodend
 
     method private void init()
+        print 'hide'
+
         #sysGui! = BBjAPI().openSysGui("X0")
         #sysGui!.setRepaintEnabled(0)
 
@@ -379,6 +383,7 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
     methodend
 
 classend
+
 print 'cs'
 
 path! = BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj", err=*next)
@@ -391,7 +396,82 @@ if(path! = null() OR path!.isEmpty()) then
     prefix """" + currentDirectory!.getParentFile().getAbsolutePath() + """ " + pfx
 endif
 
-declare PluginManagerUI pmui!
-pmui! = new PluginManagerUI()
+ok = 0; sys! = BBjAPI().openSysGui("X0", err=*next); ok = 1
+if ok then
+    declare PluginManagerUI pmui!
+    pmui! = new PluginManagerUI()
+    process_events
 
-process_events
+    release
+endif
+
+declare PluginManagerDeployer deployer!
+deployer! = new PluginManagerDeployer()
+
+print "The PluginManager needs a graphical user interface to run."
+
+admin! = BBjAdminFactory.getBBjAdmin("admin", "admin123")
+if admin! <> null() then
+    goto check_for_deployed_bui_application
+endif
+
+prompt_for_bui_app_creation:
+print "Do you want to publish it as BUI application in order to run it in the browser ? (y/n) "
+
+input userInput$
+if userInput$ <> "y" then
+    if userInput$ = "n" then
+        release
+    endif
+
+    print "Invalid Input"
+    wait 2
+    goto prompt_for_bui_app_creation
+endif
+
+print "To deploy the PluginManager BUI application, a connection to the Basis admin base needs to be established."
+
+prompt_for_bbj_admin_credentials:
+credentialEnteringCounter = credentialEnteringCounter +1
+print "Enter the BBj Enterprise Manager credentials: "
+
+print "Username: ", 
+input username$
+
+print 'EE',             ; rem Disable the Echo Mode (Hiding what the user enters)
+a = scall("stty -echo") ; rem Hiding the user input(Linux)
+? "Password: ",
+input password$
+print 'BE',             ; rem Enable the Echo Mode again
+a = scall("stty echo")  ; rem Enable the user input again
+ 
+admin! = BBjAdminFactory.getBBjAdmin(username$, password$, err=*next)
+if admin! = null() then
+    if credentialEnteringCounter > 3 then
+        print "Too many wrong attempts."
+        release
+    endif
+
+    print "Invalid BBj admin base credentials."
+    goto prompt_for_bbj_admin_credentials
+endif
+
+check_for_deployed_bui_application:
+
+if deployer!.isPluginManagerDeployedAsBUI(admin!) then
+    buiApp! = deployer!.getPluginManagerBuiApplication(admin!)
+    print "The PluginManager was already deployed as BUI application."
+    print "To run it, open the following URL in your browser: "
+    buiApp!.getUrl()
+
+    release 
+endif
+
+rem Setting up the PluginManager BUI application
+buiApp! = deployer!.deployPluginManagerBuiApp(admin!)
+
+print "The PluginManager launcher script has been published as BUI application, and ca be accessed via the following URL: " + $0A$
+print buiApp!.getUrl() 
+print $0A$
+
+release 

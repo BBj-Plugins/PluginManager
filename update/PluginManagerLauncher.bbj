@@ -73,7 +73,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.08
+    field public static BBjNumber ProgramVersion = 1.09
 
     method public PluginManagerLauncher()
         #init()
@@ -1027,6 +1027,8 @@ else
     rem endif
 endif
 
-command! = "bbj """ +  pm!.getPluginsHome().getAbsolutePath() + "/PluginManager/PluginManagerUI.bbj""" + " &"
+print 'hide'
+
+command! = "bbj """ +  pm!.getPluginsHome().getAbsolutePath() + "/PluginManager/PluginManagerUI.bbj"""
 a = scall(command!)
 bye
