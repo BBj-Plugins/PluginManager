@@ -412,7 +412,14 @@ print "The PluginManager needs a graphical user interface to run."
 
 admin! = BBjAdminFactory.getBBjAdmin("admin", "admin123")
 if admin! <> null() then
-    goto check_for_deployed_bui_application
+    if deployer!.isPluginManagerDeployedAsBUI(admin!) then
+        buiApp! = deployer!.getPluginManagerBuiApplication(admin!)
+        print "The PluginManager was already deployed as BUI application."
+        print "To run it, open the following URL in your browser: "
+        buiApp!.getUrl()
+
+        release 
+    endif
 endif
 
 prompt_for_bui_app_creation:
@@ -455,8 +462,6 @@ if admin! = null() then
     print "Invalid BBj admin base credentials."
     goto prompt_for_bbj_admin_credentials
 endif
-
-check_for_deployed_bui_application:
 
 if deployer!.isPluginManagerDeployedAsBUI(admin!) then
     buiApp! = deployer!.getPluginManagerBuiApplication(admin!)
