@@ -62,6 +62,13 @@ use com.google.gson.JsonElement
 use com.google.gson.JsonFactory
 use com.google.gson.stream.JsonReader
 
+use org.apache.http.ssl.SSLContextBuilder
+use org.apache.http.conn.ssl.NoopHostnameVerifier
+use org.apache.http.conn.ssl.SSLConnectionSocketFactory
+
+use java.security.cert.X509Certificate
+use org.apache.http.conn.ssl.TrustStrategy
+
 rem /**
 rem  * This program is the starting program for the PluginManager BBj Plugin,
 rem  * the program does install the PluginManager if it is not installed and it updates the 
@@ -701,6 +708,15 @@ class public DownloadHelper
             httpClientBuilder!.useSystemProperties()
         endif
 
+        declare SSLContextBuilder sslContextBuilder!
+        sslContextBuilder! = new SSLContextBuilder()
+        sslContextBuilder!.loadTrustMaterial(null(), new CustomTrustStrategy())
+
+        declare SSLConnectionSocketFactory socketFactory!
+        socketFactory! = new SSLConnectionSocketFactory(sslContextBuilder!.build(), null(), null(), new NoopHostnameVerifier())
+
+        httpClientBuilder!.setSSLSocketFactory(socketFactory!)
+            
         methodret httpClientBuilder!.build()
     methodend
 
@@ -1060,6 +1076,14 @@ class public ProxyService
         endif
 
         methodret new UsernamePasswordCredentials(proxyUsername!, proxyPassword!)
+    methodend
+
+classend
+
+class public CustomTrustStrategy implements TrustStrategy
+    
+    method public boolean isTrusted (X509Certificate[] chain!, String authType!)
+        methodret Boolean.TRUE
     methodend
 
 classend
