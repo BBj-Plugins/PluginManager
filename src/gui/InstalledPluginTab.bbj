@@ -54,7 +54,7 @@ class public InstalledPluginTab
         control_height = 25
 
         rem displaying the control on the right side
-        row_x = cw_width - control_width - space
+        row_x = cw_width - control_width - space -10
         cw_next_id = childWindow!.getAvailableControlID()
         rem disabled + invisible
         #mbRunDemo! = cast(BBjMenuButton, childWindow!.addMenuButton(cw_next_id, row_x, row_y, control_width, control_height, "Demo.bbj", $0011$))
@@ -77,7 +77,7 @@ class public InstalledPluginTab
         rem new row
         row_x = 10
 
-        control_width = cw_width - 2*space
+        control_width = cw_width - 2 * space -10
         control_height = 175
         cw_next_id = childWindow!.getAvailableControlID()
         #grdPlugins! = childWindow!.addGrid(cw_next_id, row_x, row_y, control_width, control_height, $8140$)
@@ -294,7 +294,7 @@ class public InstalledPluginTab
 
         control_width = 75
         control_height = 25
-        row_x = cw_width - (2 * control_width) - (4 * space)
+        row_x = cw_width - (2 * control_width) - (4 * space) - 10 
         row_y = cw_height - control_height - (4 * space)
         cw_next_id = childWindow!.getAvailableControlID()
         #btnUpdatePlugin! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x , row_y, control_width, control_height, "Update"))
