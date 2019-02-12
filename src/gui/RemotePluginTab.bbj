@@ -60,7 +60,7 @@ class public RemotePluginTab
 
         control_width = 200
         control_height = 25
-        row_x = cw_width - control_width - space - 10
+        row_x = cw_width - control_width - space - 20
         cw_next_id = childWindow!.getAvailableControlID()
         #pbInstallation! = childWindow!.addProgressBar(cw_next_id, row_x, row_y, control_width, control_height)
         #pbInstallation!.setVisible(0)
