@@ -488,7 +488,12 @@ class public PluginManager
     rem  * Executes the Demo.bbj file in the given plugin's Demo folder.
     rem  */
     method public void runDemo(InstalledBBjPlugin installedPlugin!, String demoProgramName!)
-        command! = argv(0) + " -q " + installedPlugin!.getInstallationDirectory().toString() + File.separator + "Demo" + File.separator + demoProgramName!
+        demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "Demo")
+        if !demoFolder!.exists() then
+            demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "demo")
+        endif
+
+        command! = argv(0) + " -q " + demoFolder!.getAbsolutePath() + File.separator + demoProgramName!
         print "launching: " + command!
         a = scall(command! + " &")
     methodend

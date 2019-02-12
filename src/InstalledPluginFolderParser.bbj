@@ -63,6 +63,9 @@ class public InstalledPluginFolderParser
         rem Checking if the plugin has a Demo
         declare File demoFolder!
         demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "Demo")
+        if(!demoFolder!.exists()) then
+            demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "demo")
+        endif
 
         if(demoFolder!.exists()) then
             declare File currentFile!
