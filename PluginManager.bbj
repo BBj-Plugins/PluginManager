@@ -492,7 +492,8 @@ class public PluginManager
             while(it!.hasNext())
                 currentTag! = cast(Tag, it!.next())
 
-                if(num(currentTag!.getName()) > num(tag!.getName())) then
+                if #compare(currentTag!.getName(), tag!.getName()) then
+                rem if(num(currentTag!.getName()) > num(tag!.getName())) then
                     latestVersionTagName! = currentTag!.getName()
                     break
                 endif
