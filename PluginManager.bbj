@@ -6,6 +6,8 @@ use java.util.Iterator
 use java.util.ArrayList
 use java.lang.StringBuilder
 
+use java.util.Arrays
+
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
 
@@ -263,18 +265,49 @@ class public PluginManager
                 installedPlugin!.setUpdateAvailable(Boolean.TRUE)
             endif
         else
-            version = num(tag!.getName())
+            version! = tag!.getName()
             tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.FALSE)
 
             for i=0 to tagList!.size()-1
                 if(!tagList!.get(i).getName().equals(tag!.getName()))then
-                    if(num(tagList!.get(i).getName()) > version) then
+                    if #compare(str(tagList!.get(i).getName()), version!) then
+                    rem if(num(tagList!.get(i).getName()) > ) then
                         installedPlugin!.setUpdateAvailable(Boolean.TRUE)
                         break
                     endif
                 endif
             next i
         endif
+    methodend
+
+    method public BBjNumber compare(String versionA!, String versionB!)
+        splitA! = Arrays.asList(versionA!.split("\.|-"))
+        splitB! = Arrays.asList(versionB!.split("\.|-"))
+
+        length = splitA!.size()
+        if splitB!.size() < length then
+            length = splitB!.size()
+        endif
+
+        for i=0 to length-1
+            if num(splitA!.get(i)) > num(splitB!.get(i)) then
+                methodret 1
+            endif
+
+            if num(splitA!.get(i)) < num(splitB!.get(i)) then
+                methodret -1
+            endif 
+        next i
+
+        if splitA!.size() > splitB!.size() then
+            methodret 1
+        endif
+
+        if splitA!.size() < splitB!.size() then
+            methodret -1
+        endif
+
+        methodret 0
     methodend
 
     method public BBjPlugin getInstalledPlugin(String pluginName!)
