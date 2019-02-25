@@ -155,7 +155,7 @@ class public RemoteBBjPlugin extends BBjPlugin
                     continue
                 endif
                 
-                treeMap!.put(num(tag!.getName()), tag!)
+                treeMap!.put(tag!.getName(), tag!)
             wend
             
             list! = new ArrayList(Arrays.asList(treeMap!.values().toArray()))
