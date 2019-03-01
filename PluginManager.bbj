@@ -264,19 +264,22 @@ class public PluginManager
             if(tag!.getLastChangeDate().after(installedPlugin!.getInstallationDate())) then
                 installedPlugin!.setUpdateAvailable(Boolean.TRUE)
             endif
-        else
-            version! = tag!.getName()
-            tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.FALSE)
 
-            for i=0 to tagList!.size()-1
-                if(!tagList!.get(i).getName().equals(tag!.getName()))then
-                    if #compare(str(tagList!.get(i).getName()), version!) then
-                    rem if(num(tagList!.get(i).getName()) > ) then
-                        installedPlugin!.setUpdateAvailable(Boolean.TRUE)
-                        break
-                    endif
-                endif
-            next i
+            methodret 
+        endif
+        
+        version! = tag!.getName()
+
+        rem RemoteBBjPlugin::getTagList(Boolean includeMaster!, Boolean sortByNewestVersion)
+        rem tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.TRUE)
+        
+        latestPluginVersionTag! = remotePlugin!.getLatestVersionTag()
+        latestPluginVersionTagName! = latestPluginVersionTag!.getName()
+            
+        if(!latestPluginVersionTagName!.equals(version!)) then 
+            rem if #compare(latestPluginVersionTagName!, version!) = 1 then
+                installedPlugin!.setUpdateAvailable(Boolean.TRUE)
+            rem endif
         endif
     methodend
 
@@ -492,7 +495,7 @@ class public PluginManager
             while(it!.hasNext())
                 currentTag! = cast(Tag, it!.next())
 
-                if #compare(currentTag!.getName(), tag!.getName()) then
+                if #compare(currentTag!.getName(), tag!.getName()) = 1 then
                 rem if(num(currentTag!.getName()) > num(tag!.getName())) then
                     latestVersionTagName! = currentTag!.getName()
                     break

@@ -18,37 +18,37 @@ class public RemoteBBjPlugin extends BBjPlugin
     field private Boolean installed!
     field private ArrayList tagList!
     field private String downloadURL!
-    
+
     field private Boolean customSourcePlugin!
     field private Boolean passwordRequired!
-    
+
     method public RemoteBBjPlugin()
         #tagList! = new ArrayList()
         #installed! = Boolean.FALSE
         #customSourcePlugin! = Boolean.FALSE
         #passwordRequired! = Boolean.FALSE
     methodend
-    
+
     method public void setTagList(ArrayList tagList!)
         #tagList! = tagList!
     methodend
-    
+
     method public void setCustomSourcePlugin(Boolean customSource!)
         #customSourcePlugin! = customSource!
     methodend
-    
+
     method public Boolean isCustomSourcePlugin()
         methodret #customSourcePlugin!
     methodend
-    
+
     method public void setPasswordRequired(Boolean passwordRequired!)
         #passwordRequired! = passwordRequired!
     methodend
-    
+
     method public Boolean isPasswordRequired()
         methodret #passwordRequired!
     methodend
-    
+
     rem /**
     rem  * Sets the value of the installed Boolean value to the given value.
     rem  * 
@@ -57,7 +57,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public void setInstalled(Boolean installed!)
         #installed! = installed!
     methodend
-    
+
     rem /**
     rem  * Returns true if the plugin is installed locally, false otherwise.
     rem  * 
@@ -66,7 +66,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public Boolean isInstalled()
         methodret #installed!
     methodend
-    
+
     rem /**
     rem  * Return true if the plugin is a development plugin, false otherwise.
     rem  * A developmnent plugin has no other tags than the master tag.
@@ -77,10 +77,10 @@ class public RemoteBBjPlugin extends BBjPlugin
         if(#tagList! = null()) then
             throw "The remote plugin's tag list is empty",  255
         endif
-        
+
         methodret (#tagList!.size() = 1)
     methodend
-    
+
     rem /**
     rem  * Returns the Tag object of this plugin with the given tag name. 
     rem  * Returns null if this plugin has no tag with the specified name.
@@ -91,9 +91,9 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public Tag getTag(String tagName!)
         declare Iterator it!
         it! = #tagList!.iterator()
-        
+
         declare Tag tag!
-        
+
         while(it!.hasNext())
             tag! = cast(Tag, it!.next())
 
@@ -101,10 +101,10 @@ class public RemoteBBjPlugin extends BBjPlugin
                 methodret tag!
             endif
         wend
-        
+
         methodret null()
     methodend
-    
+
     rem /**
     rem  * Returns the list with all tag objects of this plugin, 
     rem  * including the master tag in case the boolean parameter is set to true, without otherwise. 
@@ -117,22 +117,22 @@ class public RemoteBBjPlugin extends BBjPlugin
         if(#tagList! = null()) then
             methodret new ArrayList()
         endif
-        
+
         if(includeMaster! AND !orderByNewestVersion!) then
             methodret #tagList!
         endif
-    
+
         declare Tag tag!
         declare Iterator it!
         declare ArrayList tagList!
-        
+
         if(!includeMaster!) then
             tagList! = new ArrayList()
-            
+
             it! = #tagList!.iterator()
             while(it!.hasNext())
                 tag! = cast(Tag, it!.next())
-    
+
                 if(!tag!.isMaster()) then
                       tagList!.add(tag!)
                 endif
@@ -140,34 +140,47 @@ class public RemoteBBjPlugin extends BBjPlugin
         else
             tagList! = cast(ArrayList, #tagList!.clone())
         endif
- 
+
         if(orderByNewestVersion!) then
             declare Tag masterTag!
             declare TreeMap treeMap!
             treeMap! = new TreeMap()
-            
+
             it! = tagList!.iterator()
             while(it!.hasNext())
                 tag! = cast(Tag, it!.next())
-                
+
                 if(tag!.isMaster()) then
                     masterTag! = cast(Tag, tag!)
                     continue
                 endif
-                
+
                 treeMap!.put(tag!.getName(), tag!)
             wend
-            
+
             list! = new ArrayList(Arrays.asList(treeMap!.values().toArray()))
             java.util.Collections.reverse(list!)
             tagList! = cast(ArrayList, list!)
-            
+
             if(includeMaster! AND masterTag! <> null()) then
                 tagList!.add(0, masterTag!)
             endif
         endif
-        
+
         methodret tagList!
+    methodend
+
+    rem /**
+    rem  * Returns the latest version tag
+    rem  * 
+    rem  */
+    method public Tag getLatestVersionTag()
+        tagList! = #getTagList(Boolean.FALSE, Boolean.TRUE)
+        if tagList! = null() OR tagList!.isEmpty() then
+            methodret null()
+        endif
+
+        methodret tagList!.get(0)
     methodend
 
     rem /**
@@ -184,23 +197,23 @@ class public RemoteBBjPlugin extends BBjPlugin
         if(#tagList! = null()) then
             methodret new ArrayList()
         endif
-    
+
         declare Iterator it!
         it! = #getTagList(includeMaster!, orderByNewestVersion!).iterator()
-        
+
         declare Tag tag!
         declare ArrayList tagNameList!
-        
-        tagNameList! = new ArrayList() 
-        
+
+        tagNameList! = new ArrayList()
+
         while(it!.hasNext())
             tag! = cast(Tag, it!.next())
             tagNameList!.add(tag!.getName())
         wend
-        
+
         methodret tagNameList!
     methodend
-    
+
     rem /**
     rem  * Returns true if this plugin has a tag with the given name, false otherwise.
     rem  * 
@@ -212,23 +225,23 @@ class public RemoteBBjPlugin extends BBjPlugin
         if(#tagList! = null()) then
             methodret Boolean.FALSE
         endif
-    
+
         declare Iterator it!
         it! = #tagList!.iterator()
-        
+
         declare Tag tag!
-        
+
         while(it!.hasNext())
             tag! = cast(Tag, it!.next())
-            
+
             if(tag!.getName().equals(tagName!)) then
                 methodret Boolean.TRUE
             endif
         wend
-        
+
         methodret Boolean.FALSE
     methodend
-    
+
     rem /**
     rem  * Sets the plugin's project URL to the given value.
     rem  * 
@@ -237,7 +250,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public void setProjectURL(String projectURL!)
         #projectURL! = projectURL!
     methodend
-    
+
     rem /**
     rem  * Returns the plugin's project URL.
     rem  * 
@@ -246,7 +259,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public String getProjectURL()
         methodret #projectURL!
     methodend
-    
+
     rem /**
     rem  * Sets the plugin project's Github API URL to the given value.
     rem  * 
@@ -255,7 +268,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public void setApiURL(String apiURL!)
         #apiURL! = apiURL!
     methodend
-    
+
     rem /**
     rem  * Returns the plugin's Github API URL.
     rem  * 
@@ -264,7 +277,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public String getApiURL()
         methodret #apiURL!
     methodend
-    
+
     rem /**
     rem  * Sets the plugin project's Download URL to the given value.
     rem  * 
@@ -273,7 +286,7 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public void setDownloadURL(String downloadURL!)
         #downloadURL! = downloadURL!
     methodend
-    
+
     rem /**
     rem  * Returns the plugin's project Github Download URL.
     rem  * 
@@ -282,5 +295,5 @@ class public RemoteBBjPlugin extends BBjPlugin
     method public String getDownloadURL()
         methodret #downloadURL!
     methodend
-    
+
 classend
