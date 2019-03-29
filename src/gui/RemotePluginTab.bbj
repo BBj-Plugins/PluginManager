@@ -332,7 +332,7 @@ class public RemotePluginTab
 
         #hiddenListButton!.removeAllItems()
         #hiddenListButton!.insertItems(0,tagNames!)
-        #hiddenListButton!.openList()
+        rem #hiddenListButton!.openList()
 
         tag$ = grid!.getCellText(row, 2)
 
