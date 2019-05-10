@@ -28,6 +28,8 @@ class public InstalledPluginTab
     field private BBjMenuButton btnPluginProjectURL!
     field private BBjMenuButton btnPluginDocumentationURL!
 
+    field private BBjProgressBar pbPluginUpdate!
+
     field private BBjStaticText txtSelectedInstalledPluginName!
     field private BBjStaticText txtSelectedInstalledPluginStatus!
     field private BBjStaticText txtSelectedInstalledPluginDescription!
@@ -50,6 +52,7 @@ class public InstalledPluginTab
 
         row_x = 10
         row_y = 10
+
         control_width = #btnWidth
         control_height = 25
 
@@ -66,10 +69,17 @@ class public InstalledPluginTab
         control_height = 25
         row_x = row_x - control_width - space
         cw_next_id = childWindow!.getAvailableControlID()
-        rem disbaled + Invisible
+        rem disabled + Invisible
         #btnRunConfiguration! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Configure", $0011$))
         #btnRunConfiguration!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "runConfigurationButtonPush")
         #btnRunConfiguration!.setToolTipText("Runs the Plugin's Configuration program (cfg/configure.bbj)")
+
+        control_width = 200
+        control_height = 25
+        row_x = row_x - control_width - space -10         
+        cw_next_id = childWindow!.getAvailableControlID()
+        #pbPluginUpdate! = childWindow!.addProgressBar(cw_next_id, row_x, row_y, control_width, control_height)
+        #pbPluginUpdate!.setVisible(0)
 
         rem row_x = row_x + cntrol_width+ space
         row_y = row_y + control_height + space
@@ -309,6 +319,8 @@ class public InstalledPluginTab
         #btnUninstallPlugin! = cast(BBjButton, childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "Uninstall"))
         #btnUninstallPlugin!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "uninstallPlugin")
         #btnUninstallPlugin!.setEnabled(0)
+
+        bbjapi().setCustomEventCallback(PluginManagerUI.getUPDATE_PLUGIN_END(), #this!, "updatePluginEnd")
         
         #sysGui!.setRepaintEnabled(1)
     methodend
@@ -442,8 +454,31 @@ class public InstalledPluginTab
             print "Error"
             methodret
         endif
+        
+        rem relocating the progress bar
+        if #btnRunConfiguration!.isVisible() AND #mbRunDemo!.isVisible() then
+            rem no button
+        else
+            if !#btnRunConfiguration!.isVisible() AND !#mbRunDemo!.isVisible() then
+                rem completely to the rigth
+            else
+                rem one button
+            endif
+        endif
+
+        #pbPluginUpdate!.setText("Updating Plugin")
+        #pbPluginUpdate!.setIndeterminate(1)
+        #pbPluginUpdate!.setVisible(1)
 
         bbjapi().postCustomEvent(PluginManagerUI.getUPDATE_PLUGIN_REQUEST(), installedPlugin!)
+    methodend
+
+    method public void updatePluginEnd(BBjCustomEvent event!)
+        #pbPluginUpdate!.setIndeterminate(0)
+        #pbPluginUpdate!.setValue(100)
+        #pbPluginUpdate!.setText("Plugin Updated")
+        wait 1
+        #pbPluginUpdate!.setVisible(0)
     methodend
 
     method public void uninstallPlugin(BBjButtonPushEvent event!)
@@ -563,16 +598,26 @@ class public InstalledPluginTab
             if(#btnRunConfiguration!.isEnabled()) then
                 #btnRunConfiguration!.setLocation(#mbRunDemo!.getX()-#ctrlSpace-#btnWidth, #mbRunDemo!.getY())
                 #btnRunConfiguration!.setVisible(Boolean.TRUE)
+
+                rem Re-position the progressbar
+                #pbPluginUpdate!.setLocation(#btnRunConfiguration!.getX()-#ctrlSpace-200, #btnRunConfiguration!.getY())
             else
                 #btnRunConfiguration!.setVisible(Boolean.FALSE)
+
+                rem Re-position the progressbar
+                #pbPluginUpdate!.setLocation(#mbRunDemo!.getX()-#ctrlSpace-200, #mbRunDemo!.getY())
             endif
         else
             #mbRunDemo!.setVisible(Boolean.FALSE)
             if(#btnRunConfiguration!.isEnabled()) then
                 #btnRunConfiguration!.setLocation(#mbRunDemo!.getX(), #mbRunDemo!.getY())
                 #btnRunConfiguration!.setVisible(Boolean.TRUE)
+
+                #pbPluginUpdate!.setLocation(#btnRunConfiguration!.getX()-#ctrlSpace-200, #btnRunConfiguration!.getY())
             else
                 #btnRunConfiguration!.setVisible(Boolean.FALSE)
+
+                #pbPluginUpdate!.setLocation(#mbRunDemo!.getX() + #btnWidth - #ctrlSpace-200, #btnRunConfiguration!.getY())
             endif
         endif
 

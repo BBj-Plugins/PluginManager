@@ -22,10 +22,14 @@ class public PluginManagerUI
 
     field public static String RUN_DEMO_PROGRAM!          = "RUN_DEMO_PROGRAM"
     field public static String ADD_CUSTOM_PLUGIN!         = "ADD_CUSTOM_PLUGIN"
+
     field public static String INSTALL_PLUGIN_END!        = "INSTALL_PLUGIN_END"
-    field public static String REMOVE_CUSTOM_PLUGIN!      = "REMOVE_CUSTOM_PLUGIN"
     field public static String INSTALL_PLUGIN_REQUEST!    = "INSTALL_PLUGIN_REQUEST"
+
+    field public static String UPDATE_PLUGIN_END!         = "UPDATE_PLUGIN_END"
     field public static String UPDATE_PLUGIN_REQUEST!     = "UPDATE_PLUGIN_REQUEST"
+
+    field public static String REMOVE_CUSTOM_PLUGIN!      = "REMOVE_CUSTOM_PLUGIN"
     field public static String UNINSTALL_PLUGIN_REQUEST!  = "UNINSTALL_PLUGIN_REQUEST"
     field public static String RUN_CONFIGURATION_PROGRAM! = "RUN_CONFIGURATION_PROGRAM"
 
@@ -231,6 +235,10 @@ REM         mainWindowMenuConfigure!.insertSeparator(2)
         installedPlugin! = cast(InstalledBBjPlugin, event!.getObject())
 
         #pluginManager!.updatePlugin(installedPlugin!)
+
+        rem Throwing the event so that the UI can hide the progressbar
+        bbjapi().postCustomEvent(#UPDATE_PLUGIN_END!, "")
+
         #installedTab!.updateTabEntries(#pluginManager!.getInstalledPluginList())
         #remoteTab!.updateTabEntries(#pluginManager!.getRemotePluginList(Boolean.TRUE))
     methodend
