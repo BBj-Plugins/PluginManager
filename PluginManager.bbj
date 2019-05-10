@@ -112,7 +112,7 @@ class public PluginManager
         declare File backupFile!
         backupFile! = new File(#pluginsHome!, "PluginManagerLauncher_back.bbj")
         backupFile!.createNewFile()
-        
+
         arr! = java.lang.reflect.Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
         java.lang.reflect.Array.set(arr!, 0, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
         java.lang.reflect.Array.set(arr!, 0, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
@@ -265,25 +265,52 @@ class public PluginManager
                 installedPlugin!.setUpdateAvailable(Boolean.TRUE)
             endif
 
-            methodret 
+            methodret
         endif
-        
+
         version! = tag!.getName()
 
         rem RemoteBBjPlugin::getTagList(Boolean includeMaster!, Boolean sortByNewestVersion)
         rem tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.TRUE)
-        
+
         latestPluginVersionTag! = remotePlugin!.getLatestVersionTag()
         latestPluginVersionTagName! = latestPluginVersionTag!.getName()
-            
-        if(!latestPluginVersionTagName!.equals(version!)) then 
+
+        if(!latestPluginVersionTagName!.equals(version!)) then
             rem if #compare(latestPluginVersionTagName!, version!) = 1 then
                 installedPlugin!.setUpdateAvailable(Boolean.TRUE)
             rem endif
         endif
     methodend
 
+    rem /**
+    rem  * Some plugin version might start with version prefixes like for instance "v_1.0".
+    rem  * This method removes those prefixes so that the version comparison doesn't fail.
+    rem  *
+    rem  * @param version! The version String to adapt
+    rem  * @return The version String without any version prefix
+    rem  */
+    method private String removeVersionPrefix(String version!)
+        rem return the version if has no prefix
+        if Character.isDigit(version!.charAt(0)) then
+            methodret version!
+        endif
+
+        for i=0 to version!.length() -1
+            if Character.isDigit(version!.charAt(i)) then
+                version! = version!.substring(i)
+                break
+            endif
+        next i
+
+        methodret version!
+    methodend
+
     method public BBjNumber compare(String versionA!, String versionB!)
+        rem Removing possible version prefixes so that the comparison works properly
+        versionA! = #removeVersionPrefix(versionA!)
+        versionB! = #removeVersionPrefix(versionB!)
+
         splitA! = Arrays.asList(versionA!.split("\.|-"))
         splitB! = Arrays.asList(versionB!.split("\.|-"))
 
@@ -299,7 +326,7 @@ class public PluginManager
 
             if num(splitA!.get(i)) < num(splitB!.get(i)) then
                 methodret -1
-            endif 
+            endif
         next i
 
         if splitA!.size() > splitB!.size() then
@@ -374,10 +401,10 @@ class public PluginManager
         else
             installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
         endif
-        
+
         if installedPlugin! = null() then
             a = msgbox("Failed to install the selected plugin")
-            methodret 
+            methodret
         endif
 
         #pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
@@ -511,7 +538,7 @@ class public PluginManager
 
         declare InstalledBBjPlugin installedPlugin!
         installedPlugin! = #installationService!.installPlugin(remotePlugin!, tag!)
-                
+
         #pluginFolderParser!.setHasDemo(installedPlugin!)
         #pluginFolderParser!.setHasConfigurationProgram(installedPlugin!)
 
@@ -534,7 +561,7 @@ class public PluginManager
         print "launching: " + command!
         a = scall(command! + " &")
     methodend
-    
+
     rem /**
     rem  * Runs the given plugin's configuration program with the given name.
     rem  * 
@@ -545,7 +572,7 @@ class public PluginManager
         if(!installedPlugin!.hasConfigurationProgram()) then
             methodret
         endif
-        
+
         pluginDirectory! = installedPlugin!.getInstallationDirectory().toString() + File.separator + "cfg"
         command! = argv(0) + " -q " + "-WD" + pluginDirectory! + " " + configProgramName!
         print "launching: " + command!
