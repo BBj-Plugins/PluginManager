@@ -1,12 +1,17 @@
 use java.io.File
 use java.io.FileWriter
 
+use java.nio.file.Files
+
 use java.util.Arrays
 use java.util.Iterator
 use java.util.ArrayList
 
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
+
+use java.lang.reflect.Array
+use java.nio.file.StandardCopyOption
 
 use java.text.SimpleDateFormat
 
@@ -36,6 +41,7 @@ use java.io.ByteArrayOutputStream
 use com.google.gson.JsonParser
 use com.google.gson.JsonElement
 use com.google.gson.JsonFactory
+use com.google.gson.JsonPrimitive
 use com.google.gson.stream.JsonReader
 
 use ::PluginManager/src/Tag.bbj::Tag
@@ -48,6 +54,7 @@ use org.apache.http.HttpHost
 use org.apache.http.auth.UsernamePasswordCredentials
 
 use ::PluginManager/src/GithubApiService.bbj::GithubApiService
+use ::PluginManager/src/BBjPluginListParser.bbj::BBjPluginListParser
 
 class public InstallationService
 
@@ -65,19 +72,31 @@ class public InstallationService
 
     method public InstalledBBjPlugin installPlugin(RemoteBBjPlugin remotePlugin!, Tag tag!, String username!, String password!)
         declare File pluginDirectory!
+        declare UsernamePasswordCredentials credentials!
+        
         pluginDirectory! = new File(#localPluginDirectory!, remotePlugin!.getName())
-                
         url! = new URL(remotePlugin!.getProjectURL() + "/archive/" + tag!.getName() + ".zip")
 
-        declare UsernamePasswordCredentials credentials!
         if(username! <> null() AND password! <> null()) then
             credentials! = new UsernamePasswordCredentials(username!, password!)
         endif
 
-        installSuccess! = #pluginManagerLauncher!.installPlugin(url!, remotePlugin!.getName(), credentials!)
+        tempPluginDirectory! = new File(#localPluginDirectory!, str(System.currentTimeMillis()))
+
+        installSuccess! = #pluginManagerLauncher!.installPlugin(url!, tempPluginDirectory!.getName(), credentials!)
         if !installSuccess! then
             methodret null()
         endif
+
+        rem executing the pre-install scripts before actually renaming the plugin directory
+        #executeHookPrograms(tag!.getPreInstallHookProgramList(), tempPluginDirectory!)
+
+        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(copyOptions!, 0, StandardCopyOption.REPLACE_EXISTING)
+
+        rem renaming the plugin = starting to install it
+        Files.move(tempPluginDirectory!.toPath(), pluginDirectory!.toPath(), copyOptions!)
 
         remotePlugin!.setInstalled(Boolean.TRUE)
 
@@ -124,6 +143,38 @@ class public InstallationService
         jsonTagObject!.addProperty("documentation_url", tag!.getDocumentationURL(), err=*next)
         jsonTagObject!.addProperty("last_change", sdf!.format(tag!.getLastChangeDate()))
 
+        if !tag!.getPreInstallHookProgramList().isEmpty() then
+            jsonArray! = new JsonArray()
+            for i=0 to tag!.getPreInstallHookProgramList().size() -1
+                jsonArray!.add(new JsonPrimitive(tag!.getPreInstallHookProgramList().get(i)))
+            next i
+            jsonTagObject!.add(BBjPluginListParser.getPRE_INSTALL_HOOKS(), jsonArray!)
+        endif
+
+        if !tag!.getPostInstallHookProgramList().isEmpty() then
+            jsonArray! = new JsonArray()
+            for i=0 to tag!.getPostInstallHookProgramList().size() -1
+                jsonArray!.add(new JsonPrimitive(tag!.getPostInstallHookProgramList().get(i)))
+            next i
+            jsonTagObject!.add(BBjPluginListParser.getPOST_INSTALL_HOOKS(), jsonArray!)
+        endif
+
+        if !tag!.getPreUninstallHookProgramList().isEmpty() then
+            jsonArray! = new JsonArray()
+            for i=0 to tag!.getPreUninstallHookProgramList().size() -1
+                jsonArray!.add(new JsonPrimitive(tag!.getPreUninstallHookProgramList().get(i)))
+            next i
+            jsonTagObject!.add(BBjPluginListParser.getPRE_UNINSTALL_HOOKS(), jsonArray!)
+        endif
+
+        if !tag!.getPostUninstallHookProgramList().isEmpty() then
+            jsonArray! = new JsonArray()
+            for i=0 to tag!.getPostUninstallHookProgramList().size() -1
+                jsonArray!.add(new JsonPrimitive(tag!.getPostUninstallHookProgramList().get(i)))
+            next i
+            jsonTagObject!.add(BBjPluginListParser.getPOST_UNINSTALL_HOOKS(), jsonArray!)
+        endif
+
         if(!tag!.getPluginDependencyMap().isEmpty()) then
             declare JsonArray dependencyArray!
             dependencyArray! = new JsonArray()
@@ -159,11 +210,46 @@ class public InstallationService
 
         file!.createNewFile()
 
+        rem the plugin has been installed, run the post install scripts
+        #executeHookPrograms(tag!.getPostInstallHookProgramList(), pluginDirectory!)
+
         methodret installedPlugin!
     methodend
 
     method public void uninstallPlugin(InstalledBBjPlugin installedPlugin!)
-        #deleteDirectory(installedPlugin!.getInstallationDirectory())
+        tag! = installedPlugin!.getTag()
+        pluginDirectory! = installedPlugin!.getInstallationDirectory()
+
+        rem Executing the pre-uninstall hook programs
+        #executeHookPrograms(tag!.getPreUninstallHookProgramList(), pluginDirectory!)
+
+        tempPluginDirectory! = new File(pluginDirectory!.getParent(), str(System.currentTimeMillis()))
+
+        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(copyOptions!, 0, StandardCopyOption.REPLACE_EXISTING)
+
+        rem Rename the plugin directory to prepare it for the uninstall process
+        Files.move(pluginDirectory!.toPath(), tempPluginDirectory!.toPath(), copyOptions!)
+
+        rem execute the post uninstall hooks 
+        #executeHookPrograms(tag!.getPostUninstallHookProgramList(), tempPluginDirectory!)
+
+        rem deleting the plugin directory = uninstalling it 
+        #deleteDirectory(tempPluginDirectory!)        
+    methodend
+
+    method private void executeHookPrograms(ArrayList hookProgramList!, File workingDirectory!)
+        if hookProgramList!.isEmpty() then
+            methodret
+        endif
+
+        pluginDirectory! = workingDirectory!.toString() + File.separator
+        command! = argv(0) + " -q " + "-WD" + pluginDirectory! + " "
+
+        for i=0 to hookProgramList!.size() -1
+            a = scall(command! + hookProgramList!.get(i))
+        next i
     methodend
 
     rem /**
@@ -183,7 +269,7 @@ class public InstallationService
                     #deleteDirectory(file!)
                 endif
 
-                print "deleting: " + file!.toString()
+                rem print "deleting: " + file!.toString()
                 file!.delete()
             wend
         endif

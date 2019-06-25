@@ -8,6 +8,11 @@ use java.lang.StringBuilder
 
 use java.util.Arrays
 
+use java.lang.reflect.Array
+use java.nio.file.StandardCopyOption
+
+use java.nio.file.Files
+
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
 
@@ -113,16 +118,16 @@ class public PluginManager
         backupFile! = new File(#pluginsHome!, "PluginManagerLauncher_back.bbj")
         backupFile!.createNewFile()
 
-        arr! = java.lang.reflect.Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
-        java.lang.reflect.Array.set(arr!, 0, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
-        java.lang.reflect.Array.set(arr!, 0, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        arr! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(arr!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(arr!, 0, StandardCopyOption.REPLACE_EXISTING)
 
-        java.nio.file.Files.move(currentProgramFile!.toPath(), backupFile!.toPath(), arr!)
+        Files.move(currentProgramFile!.toPath(), backupFile!.toPath(), arr!)
 
         declare File newProgramFile!
         newProgramFile! = new File(#pluginManagerDirectory!, "update/PluginManagerLauncher.bbj")
 
-        java.nio.file.Files.move(newProgramFile!.toPath(), currentProgramFile!.toPath(), arr!)
+        Files.move(newProgramFile!.toPath(), currentProgramFile!.toPath(), arr!)
     methodend
 
     method public void addCustomBBjPluginRepository(String url!, Boolean useCredentials!)

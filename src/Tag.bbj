@@ -1,4 +1,5 @@
 use java.util.HashMap
+use java.util.ArrayList
 
 class public Tag
 
@@ -10,6 +11,11 @@ class public Tag
     
     rem the url of the plugin documentation for this tag
     field private String documentationURL!
+
+    field private ArrayList preInstallHookProgramList!    = new ArrayList()
+    field private ArrayList postInstallHookProgramList!   = new ArrayList()
+    field private ArrayList preUninstallHookProgramList!  = new ArrayList()
+    field private ArrayList postUninstallHookProgramList! = new ArrayList()
 
     rem /**
     rem  * Class constructor. Creates an empty Tag object.
@@ -60,6 +66,55 @@ class public Tag
     
     method public Boolean isMaster()
         methodret #isMaster!
+    methodend
+
+    method public ArrayList getPreInstallHookProgramList()
+        methodret #preInstallHookProgramList!
+    methodend
+
+    method public ArrayList getPostInstallHookProgramList()
+        methodret #postInstallHookProgramList!
+    methodend
+
+    method public ArrayList getPreUninstallHookProgramList()
+        methodret #preUninstallHookProgramList!
+    methodend
+
+    method public ArrayList getPostUninstallHookProgramList()
+        methodret #postUninstallHookProgramList!
+    methodend
+
+    method public void addPreInstallHookProgram(String programName!)
+        rem Check duplicates ? 
+        #preInstallHookProgramList!.add(programName!)
+    methodend
+
+    method public void addPostInstallHookProgram(String programName!)
+        #postInstallHookProgramList!.add(programName!)
+    methodend
+
+    method public void addPreUninstallHookProgram(String programName!)
+        #preUninstallHookProgramList!.add(programName!)
+    methodend
+
+    method public void addPostUninstallHookProgram(String programName!)
+        #postUninstallHookProgramList!.add(programName!)
+    methodend
+
+    method public void setPreInstallHookProgramList(ArrayList hookProgramList!)
+        #preInstallHookProgramList! = hookProgramList!
+    methodend
+
+    method public void setPostInstallHookProgramList(ArrayList hookProgramList!)
+        #postInstallHookProgramList! = hookProgramList!
+    methodend
+
+    method public void setPreUninstallHookProgramList(ArrayList hookProgramList!)
+        #preUninstallHookProgramList! = hookProgramList!
+    methodend
+
+    method public void setPostUninstallHookProgramList(ArrayList hookProgramList!)
+        #postUninstallHookProgramList! = hookProgramList!
     methodend
     
     rem /**
@@ -116,6 +171,11 @@ class public Tag
         tag!.setBBjDependency(#bbjDependency!)
         tag!.setPluginDependencyMap(cast(HashMap, #pluginDependencyMap!.clone()))
         tag!.setDocumentationURL(#documentationURL!)
+
+        tag!.setPreInstallHookProgramList(cast(ArrayList, #preInstallHookProgramList!.clone()))
+        tag!.setPostInstallHookProgramList(cast(ArrayList, #postInstallHookProgramList!.clone()))
+        tag!.setPreUninstallHookProgramList(cast(ArrayList, #preUninstallHookProgramList!.clone()))
+        tag!.setPostUninstallHookProgramList(cast(ArrayList, #postUninstallHookProgramList!.clone()))
         
         methodret tag!
     methodend

@@ -18,6 +18,7 @@ use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/PluginManager.bbj::PluginManager
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+use ::PluginManager/src/BBjPluginListParser.bbj::BBjPluginListParser
 
 class public InstalledPluginFolderParser
 
@@ -205,6 +206,42 @@ class public InstalledPluginFolderParser
                 dependencyArray! = jsonTagObject!.get("plugin_dependencies").getAsJsonArray()
 
                 #dependencyMap!.put(installedPlugin!, dependencyArray!)
+            endif
+
+            if jsonTagObject!.has(BBjPluginListParser.getPRE_INSTALL_HOOKS()) then
+                hookProgramArray! = jsonTagObject!.get(BBjPluginListParser.getPRE_INSTALL_HOOKS()).getAsJsonArray()
+                if hookProgramArray!.size() > 0 then
+                    for i=0 to hookProgramArray!.size() -1
+                        tag!.addPreInstallHookProgram(hookProgramArray!.get(i).getAsString())
+                    next i  
+                endif
+            endif
+
+            if jsonTagObject!.has(BBjPluginListParser.getPOST_INSTALL_HOOKS()) then
+                hookProgramArray! = jsonTagObject!.get(BBjPluginListParser.getPOST_INSTALL_HOOKS()).getAsJsonArray()
+                if hookProgramArray!.size() > 0 then
+                    for i=0 to hookProgramArray!.size() -1
+                        tag!.addPostInstallHookProgram(hookProgramArray!.get(i).getAsString())
+                    next i  
+                endif
+            endif
+
+            if jsonTagObject!.has(BBjPluginListParser.getPRE_UNINSTALL_HOOKS()) then
+                hookProgramArray! = jsonTagObject!.get(BBjPluginListParser.getPRE_UNINSTALL_HOOKS()).getAsJsonArray()
+                if hookProgramArray!.size() > 0 then
+                    for i=0 to hookProgramArray!.size() -1
+                        tag!.addPreUninstallHookProgram(hookProgramArray!.get(i).getAsString())
+                    next i  
+                endif
+            endif
+
+            if jsonTagObject!.has(BBjPluginListParser.getPOST_UNINSTALL_HOOKS()) then
+                hookProgramArray! = jsonTagObject!.get(BBjPluginListParser.getPOST_UNINSTALL_HOOKS()).getAsJsonArray()
+                if hookProgramArray!.size() > 0 then
+                    for i=0 to hookProgramArray!.size() -1
+                        tag!.addPostUninstallHookProgram(hookProgramArray!.get(i).getAsString())
+                    next i  
+                endif
             endif
 
             installedPlugin!.setTag(tag!)

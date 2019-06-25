@@ -18,6 +18,12 @@ use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 
 class public BBjPluginListParser
 
+    field public static String PRE_INSTALL_HOOKS!  = "pre-install-hooks"
+    field public static String POST_INSTALL_HOOKS! = "post-install-hooks"
+
+    field public static String PRE_UNINSTALL_HOOKS!  = "pre-uninstall-hooks"
+    field public static String POST_UNINSTALL_HOOKS! = "post-uninstall-hooks"
+
     method public static ArrayList parse(File pluginListFile!)
         if(!pluginListFile!.exists()) then
             throw "Missing file bbj-plugin-list.json. Re-run the PluginManagerLauncher to update your installation.", 255
@@ -109,6 +115,38 @@ class public BBjPluginListParser
 
                     if(tagJsonObject!.has("bbj_dependency")) then
                         tag!.setBBjDependency(tagJsonObject!.get("bbj_dependency").getAsString())
+                    endif
+
+                    if(tagJsonObject!.has(#PRE_INSTALL_HOOKS!)) then
+                        programHooksJsonArray! = tagJsonObject!.get(#PRE_INSTALL_HOOKS!).getAsJsonArray()
+                        arrayIterator! = programHooksJsonArray!.iterator()
+                        while arrayIterator!.hasNext()
+                            tag!.addPreInstallHookProgram(arrayIterator!.next().getAsString())
+                        wend
+                    endif                    
+
+                    if(tagJsonObject!.has(#POST_INSTALL_HOOKS!)) then
+                        programHooksJsonArray! = tagJsonObject!.get(#POST_INSTALL_HOOKS!).getAsJsonArray()
+                        arrayIterator! = programHooksJsonArray!.iterator()
+                        while arrayIterator!.hasNext()
+                            tag!.addPostInstallHookProgram(arrayIterator!.next().getAsString())
+                        wend
+                    endif
+
+                    if(tagJsonObject!.has(#PRE_UNINSTALL_HOOKS!)) then
+                        programHooksJsonArray! = tagJsonObject!.get(#PRE_UNINSTALL_HOOKS!).getAsJsonArray()
+                        arrayIterator! = programHooksJsonArray!.iterator()
+                        while arrayIterator!.hasNext()
+                            tag!.addPreUninstallHookProgram(arrayIterator!.next().getAsString())
+                        wend
+                    endif
+
+                    if(tagJsonObject!.has(#POST_UNINSTALL_HOOKS!)) then
+                        programHooksJsonArray! = tagJsonObject!.get(#POST_UNINSTALL_HOOKS!).getAsJsonArray()
+                        arrayIterator! = programHooksJsonArray!.iterator()
+                        while arrayIterator!.hasNext()
+                            tag!.addPostUninstallHookProgram(arrayIterator!.next().getAsString())
+                        wend
                     endif
 
                     if(tagJsonObject!.has("plugin_dependencies") AND tagJsonObject!.get("plugin_dependencies").isJsonArray()) then

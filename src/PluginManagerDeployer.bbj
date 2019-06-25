@@ -4,6 +4,13 @@ use com.basis.api.admin.BBjAdminBuiConfiguration
 
 use java.io.File
 
+rem /**
+rem  * <h1> PluginManagerDeployer </h1>
+rem  *
+rem  * This class is used to deploy the PluginManager as BUI application 
+rem  * on the client if there is no available Grafical Interface that can be used. 
+rem  * 
+rem  */
 class public PluginManagerDeployer
 
 	method public PluginManagerDeployer()
