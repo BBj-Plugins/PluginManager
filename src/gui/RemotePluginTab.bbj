@@ -53,7 +53,7 @@ class public RemotePluginTab
         control_width = 300
         control_height = 25
         cw_next_id = childWindow!.getAvailableControlID()
-        #cbxIncludeDevPlugins! = childWindow!.addCheckBox(cw_next_id, row_x, row_y, control_width, control_height, "Show only development plugins")
+        #cbxIncludeDevPlugins! = childWindow!.addCheckBox(cw_next_id, row_x, row_y, control_width, control_height, "Show versions under development")
         #cbxIncludeDevPlugins!.setSelected(0)
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_ON, #this!, "includeDevelopmentPlugins")
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_OFF, #this!, "excludeDevelopmentPlugins")
