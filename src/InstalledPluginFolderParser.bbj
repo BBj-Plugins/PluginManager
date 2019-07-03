@@ -105,7 +105,7 @@ class public InstalledPluginFolderParser
         endif
 
         declare File installFile!
-        installFile! = new File( directory!, "install.json")
+        installFile! = new File(directory!, "install.json")
 
         if(!installFile!.exists()) then
             methodret Boolean.FALSE

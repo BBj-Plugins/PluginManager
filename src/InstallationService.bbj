@@ -91,6 +91,13 @@ class public InstallationService
         rem executing the pre-install scripts before actually renaming the plugin directory
         #executeHookPrograms(tag!.getPreInstallHookProgramList(), tempPluginDirectory!)
 
+        rem The BBjWidget directory is always present on fresh installations
+        rem causing the copy mechanism to fail.
+        rem This work-around removes the BBjWidget directory and installs the plugin anyway. 
+        if pluginDirectory!.getName() = "BBjWidget" then
+            #deleteDirectory(pluginDirectory!)    
+        endif
+
         copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
         Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
         Array.set(copyOptions!, 0, StandardCopyOption.REPLACE_EXISTING)
