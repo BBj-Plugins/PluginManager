@@ -13,9 +13,11 @@ use java.nio.file.StandardCopyOption
 
 use java.nio.file.Files
 
+use com.google.gson.JsonParser
 use com.google.gson.JsonArray
 use com.google.gson.JsonObject
 
+use java.io.FileReader
 use java.io.IOException
 use java.io.BufferedReader
 use java.io.InputStreamReader
@@ -33,6 +35,9 @@ use ::PluginManager/src/AuthenticationService.bbj::AuthenticationService
 use ::PluginManager/src/CustomPluginListHandler.bbj::CustomPluginListHandler
 use ::PluginManager/src/InstalledPluginFolderParser.bbj::InstalledPluginFolderParser
 
+use ::PluginManager/src/PluginInstallationImporter.bbj::PluginInstallationImporter
+use ::PluginManager/src/PluginInstallationExporter.bbj::PluginInstallationExporter
+
 use ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher
 
 class public PluginManager
@@ -41,6 +46,9 @@ class public PluginManager
     field private File pluginManagerDirectory!
 
     field private AuthenticationService authService!
+
+    field private PluginInstallationImporter pluginInstallationImporter!
+    field private PluginInstallationExporter pluginInstallationExporter!
 
     field private ArrayList remotePlugins!
     field private ArrayList installedPlugins!
@@ -73,6 +81,9 @@ class public PluginManager
         declare File customPluginListFile!
         customPluginListFile! = new File(#pluginManagerDirectory!, "custom-plugin-list.json")
         #customPluginListHandler! = new CustomPluginListHandler(customPluginListFile!)
+
+        #pluginInstallationImporter! = new PluginInstallationImporter(#this!)
+        #pluginInstallationExporter! = new PluginInstallationExporter(#this!)
 
         if(customPluginListFile!.exists()) then
             declare ArrayList customSourcePluginList!
@@ -720,6 +731,74 @@ class public PluginManager
         wend
 
         methodret dependentPlugins!
+    methodend
+
+    rem /**
+    rem  * Returns the RemoteBBjPlugin matching the given ID or null
+    rem  * if no plugin was found for the given ID.
+    rem  *
+    rem  * @param pluginID the ID of the plugin to return
+    rem  * @return the RemoteBBjPlugin with the given ID or null
+    rem  */
+    method public RemoteBBjPlugin getRemotePluginByID(BBjNumber pluginID)
+        plugin! = #getPluginByID(pluginID, #remotePlugins!)
+        if plugin! <> null() then
+            methodret cast(RemoteBBjPlugin, plugin!)
+        endif 
+        methodret null()
+    methodend
+
+    rem /**
+    rem  * Returns the BBjPlugin from the given list of plugins 
+    rem  * matching the given ID or null if no plugin has the given ID.
+    rem  *
+    rem  * @param ID the ID of the plugin to return
+    rem  * @param pluginList! the list of plugins to loop through
+    rem  *
+    rem  * @return the BBjPlugin matching the given ID or null.
+    rem  */
+    method private BBjPlugin getPluginByID(BBjNumber ID, ArrayList pluginList!)
+        declare Iterator it!
+        it! = pluginList!.iterator()
+
+        declare BBjPlugin bbjPlugin!
+
+        while it!.hasNext()
+            bbjPlugin! = cast(BBjPlugin, it!.next())
+
+            if bbjPlugin!.getID() = ID then
+                methodret bbjPlugin!
+            endif
+        wend
+
+        methodret null()
+    methodend
+
+    rem /** 
+    rem  * Returns the PluginInstallationImporter object used to install  
+    rem  * all plugins defined in an installation profile file. This object
+    rem  * is used to script the PluginManager in order to automatically install 
+    rem  * certain plugins in specific versions on the client machine. 
+    rem  *
+    rem  * @return the PluginInstallationImporter object used to install several 
+    rem  *         plugins in specific version from an installation profile file.
+    rem  */
+    method public PluginInstallationImporter getPluginInstallationImporter()
+        methodret #pluginInstallationImporter!
+    methodend
+
+    rem /**
+    rem  * Returns the PluginInstallationExporter object used to export the 
+    rem  * currently installed plugins as json file(Installation profile). 
+    rem  * 
+    rem  * The PluginManager can be scripted using this installation profile 
+    rem  * file to automatically install all plugins defined in that file. 
+    rem  * 
+    rem  * @return the PluginInstallationExporter used to create an installation profile file
+    rem  *         based on the currently installed plugins
+    rem  */
+    method public PluginInstallationExporter getPluginInstallationExporter()
+        methodret #pluginInstallationExporter!
     methodend
 
 classend

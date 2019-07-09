@@ -1,0 +1,84 @@
+use java.io.File 
+
+use com.google.gson.JsonParser
+use com.google.gson.JsonArray
+use com.google.gson.JsonObject
+
+use ::PluginManager/PluginManager.bbj::PluginManager
+use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
+
+rem /**
+rem  * <h1>PluginInstallationExporter</h1>
+rem  * 
+rem  * The PluginInstallationExporter class is used to create a 
+rem  * plugin installation profile file based on te currently 
+rem  * installed plugins and their version. The PluginManager can 
+rem  * then later be scripted to automatically install all plugins 
+rem  * from that installation profile. This class is mostly used 
+rem  * to create a plugin setup to be installed on client machines.
+rem  */
+class public PluginInstallationExporter
+
+    field private PluginManager pluginManager!
+
+    rem /**
+    rem  * The PluginInstallationExporter class default constructor.
+    rem  * 
+    rem  * @param pluginManager! The PluginManager object used to identify the installed plugins
+    rem  */
+    method public PluginInstallationExporter(PluginManager pluginManager!)
+        #pluginManager! = pluginManager!
+    methodend
+
+    rem /**
+    rem  * This method writes the current plugin installation profile 
+    rem  * into the given file. The file can then later be passed to the 
+    rem  * PluginManager for it to automatically install all the plugins 
+    rem  * from that file. 
+    rem  *
+    rem  * @param outputFile! The installation profile file to write
+    rem  */
+    method public void exportInstallationProfile(File outputFile!)
+        declare JsonArray  jsonArray!
+        declare JsonObject jsonObject!
+        declare InstalledBBjPlugin installedPlugin!
+
+        jsonArray! = new JsonArray()
+
+        if #pluginManager!.getInstalledPluginList().isEmpty() then
+            methodret
+        endif
+
+        it! = #pluginManager!.getInstalledPluginList().iterator()
+        while it!.hasNext()
+            installedPlugin! = cast(InstalledBBjPlugin, it!.next())
+
+            jsonObject! = new JsonObject()
+            jsonObject!.addProperty("plugin_id", installedPlugin!.getID().intValue())
+            jsonObject!.addProperty("project_url", installedPlugin!.getProjectURL())
+            jsonObject!.addProperty("tag_name", installedPlugin!.getTag().getName())
+
+            jsonArray!.add(jsonObject!)
+        wend
+
+        #writeFile(outputFile!, jsonArray!.toString())
+    methodend
+
+    rem /**
+    rem  * Write the content of the given String into the given file
+    rem  * 
+    rem  * @param outputFile! The file to write
+    rem  * @param content! The content to write into the file 
+    rem  */
+    method private void writeFile(File outputFile!, String content!)
+        ch = unt 
+        open(ch, mode="o_create,o_trunc") outputFile!.getAbsolutePath()
+        write(ch) content!
+        close(ch)
+    methodend
+
+classend
+
+declare PluginManager pluginManager!
+pluginManager! = new PluginManager()
+pluginManager!.getPluginInstallationExporter().exportInstallationProfile(new File("/u/tmp/demo.json"))

@@ -1,0 +1,82 @@
+use java.io.File
+use java.io.FileReader
+
+use java.util.HashMap
+use java.util.Iterator
+
+use com.google.gson.JsonParser
+use com.google.gson.JsonArray
+use com.google.gson.JsonObject
+
+use ::PluginManager/src/Tag.bbj::Tag
+use ::PluginManager/PluginManager.bbj::PluginManager
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+
+rem /**
+rem  * The PluginInstallationImporter class is used to import
+rem  * a installation profile file for the PluginManager to install.
+rem  * This class is used when scripting the PluginManager to 
+rem  * automatically install a list of plugins in specific version
+rem  * in order to save some deployment time on client machines
+rem  */
+class public PluginInstallationImporter
+
+    field private PluginManager pluginManager!
+
+    rem /**
+    rem  * The PluginInstallationImporter standard constructor
+    rem  * 
+    rem  * @param pluginManager! The PluginManager object used to install the plugins
+    rem  *                       from the installation profile file
+    rem  */
+    method public PluginInstallationImporter(PluginManager pluginManager!)
+        #pluginManager! = pluginManager!
+    methodend
+
+    rem /**
+    rem  * Installs the plugins defined in the given installation profile file. This method strictly  
+    rem  * installs only the plugins defined in the given file. If a dependency of a plugin to install 
+    rem  * is not specified in the installation profile file, it won't be installed by this method. 
+    rem  * If the dependencies are missing in the profile file, they were most likely ommitted by the user
+    rem  * and are therefore ignored by this method as well.
+    rem  * 
+    rem  * @param installationProfileFile! The file which contains the information of the plugins to install
+    rem  */
+    method public void importInstallationProfile(File installationProfileFile!)
+        rem making sure that the file can actually be read
+        if installationProfileFile! = null() OR !installationProfileFile!.exists() OR !installationProfileFile!.canRead() then
+            rem reject
+            methodret 
+        endif
+        
+        declare HashMap pluginsToInstall!
+        declare RemoteBBjPlugin remotePlugin!
+        pluginsToInstall! = new HashMap()
+
+        declare Iterator   it!
+        declare JsonArray  jsonArray!
+        declare JsonParser jsonParser!
+        declare JsonObject jsonObject!
+        
+        jsonParser! = new JsonParser()
+        jsonArray! = jsonParser!.parse(new FileReader(installationProfileFile!)).getAsJsonArray()
+
+        it! = jsonArray!.iterator()
+        while it!.hasNext()
+            jsonObject! = cast(JsonObject, it!.next())
+
+            remotePlugin! = cast(RemoteBBjPlugin, #pluginManager!.getRemotePluginByID(jsonObject!.get("plugin_id").getAsInt()))
+            if remotePlugin! <> null() then 
+                tag! = remotePlugin!.getTag(jsonObject!.get("tag_name").getAsString())
+                if tag! <> null() then
+                    #pluginManager!.installPlugin(remotePlugin!, tag!)
+                endif
+            endif
+        wend
+    methodend
+
+classend
+
+declare PluginManager pluginManager!
+pluginManager! = new PluginManager()
+pluginManager!.getPluginInstallationImporter().importInstallationProfile(new File("/u/tmp/demo.json"))
