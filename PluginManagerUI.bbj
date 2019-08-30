@@ -18,6 +18,9 @@ use java.text.SimpleDateFormat
 
 use ::PluginManager/src/PluginManagerDeployer.bbj::PluginManagerDeployer
 
+rem Used to update the plugin manager related files
+use ::PluginManager/src/update/PluginManagerUpdater.bbj::PluginManagerUpdater
+
 class public PluginManagerUI
 
     field public static String RUN_DEMO_PROGRAM!          = "RUN_DEMO_PROGRAM"
@@ -48,10 +51,57 @@ class public PluginManagerUI
     field private ConfigurePluginProjectURLsWindow configurePluginProjectURLsWindow!
 
     method public PluginManagerUI()
+        #updatePluginManager()
+
+        rem Checks for a PluginManagerLauncher update, 
+        rem and performs the update
+        #updatePluginManagerLauncher()
+
         #pluginManager! = new PluginManager()
+
         #configurePluginProjectURLsWindow! = new ConfigurePluginProjectURLsWindow(#pluginManager!, #this!)
         #credentialWindow! = new GithubCredentialWindow()
         #init()
+    methodend
+
+    rem /**
+    rem  * Checks if a PluginManager update is available,
+    rem  * and updates it.
+    rem  */
+    method private void updatePluginManager()
+        declare PluginManagerUpdater updater!
+        updater! = new PluginManagerUpdater()
+
+        if updater!.isPluginManagerUpdateAvailable() then 
+            updater!.updatePluginManager()
+        endif
+
+        rem update the list of plugins 
+        updater!.updatePluginList()
+    methodend
+
+    rem /**
+    rem  * Checks if the PluginManagerLauncher.bbj program can be updated, 
+    rem  * and prompts the user asking to update it if an update is available.
+    rem  * Updates the launcher based on the user's selection.
+    rem  */
+    method private void updatePluginManagerLauncher()
+        declare PluginManagerUpdater updater!
+        updater! = new PluginManagerUpdater()
+
+        if !updater!.isLauncherUpdateAvailable() then
+            methodret 
+        endif
+
+        declare StringBuilder sb!
+        sb! = new StringBuilder()
+        sb!.append("An update is available for the PluginManagerLauncher.bbj program.")
+        sb!.append("Would you like to perform an update (the currently installed program will be renamed so that you can always perform a rollback) ?")
+        a = msgbox(sb!.toString(), 4)
+
+        if(a = 6) then
+            updater!.updateLauncher()
+        endif
     methodend
 
     method private void init()
