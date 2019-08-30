@@ -80,7 +80,7 @@ class public PluginManagerLauncher
     field private File pluginsHome!
     field private ProxyConfigurationWindow proxyConfigurationWindow!
 
-    field public static BBjNumber ProgramVersion = 1.12
+    field public static BBjNumber ProgramVersion = 1.13
 
     method public PluginManagerLauncher()
         #init()
@@ -128,6 +128,29 @@ class public PluginManagerLauncher
                 endif
             endif            
         endif
+    methodend
+
+    rem /**
+    rem  * Returns the bbj/plugins directory or null if it couldn't be found.
+    rem  * 
+    rem  * @return the bbj/plugins directory as Fie object
+    rem  */
+    method public static File getPluginsHomeDirectory()
+        declare File bbjHome!
+        declare File pluginsHome!
+        
+        bbjHomePath! = System.getProperty("basis.BBjHome", err=*next)
+        bbjHome! = new File(bbjHomePath!)
+        if(!bbjHome!.exists()) then
+           throw "Could not find BBj Home", 255
+        endif
+
+        pluginsHome! = new File(bbjHome!, "plugins")
+        if(!pluginsHome!.exists()) then
+            throw "The plugin folder could not be found", 255
+        endif
+
+        methodret pluginsHome!
     methodend
 
     method private Boolean inTerminalEnvironment()
@@ -609,7 +632,7 @@ class public DownloadHelper
         entity! = #HttpResponse!.getEntity()
 
         if entity! <> null() then
-            name! = #HttpResponse!.getFirstHeader("Content-Disposition").getValue()
+            rem name! = #HttpResponse!.getFirstHeader("Content-Disposition").getValue()
 
             stream! = new FileOutputStream(#OutputFile!)
             entity!.writeTo(stream!)
@@ -1089,6 +1112,16 @@ class public CustomTrustStrategy implements TrustStrategy
 classend
 
 print 'cs'
+
+cp! = BBjAPI().getConfig().getCurrentCommandLineObject().getOriginalClasspathName()
+if (cp! = "") then
+    cmdl! = BBjAPI().getConfig().getCurrentCommandLineObject()
+    cmdl!.setClasspathName("bbj_internal")
+    print 'hide',
+    BBjAPI().newSynchBBjSession(cmdl!)
+    release
+fi
+
 
 declare PluginManagerLauncher pm!
 pm! = new PluginManagerLauncher()

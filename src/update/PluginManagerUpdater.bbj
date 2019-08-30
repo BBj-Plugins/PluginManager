@@ -1,0 +1,150 @@
+use java.io.File
+use java.net.URL
+
+use java.nio.file.Files
+use java.nio.file.StandardCopyOption
+
+use java.lang.reflect.Array
+
+use ::PluginManager/update/PluginManagerLauncher.bbj::DownloadHelper
+use ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher
+
+rem /**
+rem  * The PluginManagerUpdater is the main class responsible for updating:
+rem  * - The PluginManager
+rem  * - The PluginManagerLauncher.bbj file
+rem  * - The bbj-plugin-list.json file
+rem  */
+class public PluginManagerUpdater
+
+    field private static URL PM_LIST_FILE_URL! = new URL("https://raw.githubusercontent.com/BBj-Plugins/PluginManager/master/bbj-plugin-list.json")
+    field private static URL PM_PROJECT_URL!   = new URL("https://github.com/BBj-Plugins/PluginManager/archive/master.zip")
+
+    field private File pluginsDirectory!
+    field private File pluginManagerDirectory!
+
+    method public PluginManagerUpdater()
+        #pluginsDirectory! = PluginManagerLauncher.getPluginsHomeDirectory()
+        #pluginManagerDirectory! = new File(#pluginsDirectory!, "PluginManager")
+    methodend
+
+    rem /**
+    rem  * Returns true if the installed PluginManagerLauncher.bbj 
+    rem  * program version is outdated and can to be updated, 
+    rem  * false otherwise.
+    rem  * 
+    rem  * @return true if a newer launcher version is available, false otherwise.
+    rem  */
+    method public Boolean isLauncherUpdateAvailable()
+        installedVersion = 0
+        installedVersion = ::PluginManagerLauncher.bbj::PluginManagerLauncher.getProgramVersion(err=*next)
+
+        incorporatedVersion = 0
+        incorporatedVersion = PluginManagerLauncher.getProgramVersion(err=*next)
+
+        if(installedVersion >= incorporatedVersion) then
+            rem The latest version or a newer version is installed
+            methodret Boolean.FALSE
+        endif
+
+        methodret Boolean.TRUE
+    methodend
+
+    rem /**
+    rem  * Updates the PluginManagerLauncher.bbj program in the 
+    rem  * bbj/plugins/ directory by replacing it with the file 
+    rem  * from PluginManager/update/ directory. This method 
+    rem  * renamed the previous launcher file with the _back 
+    rem  * prefix, in order to perform a rollback if the new launcher
+    rem  * version is causing some issues.
+    rem  */
+    method public void updateLauncher()
+        if !#isLauncherUpdateAvailable() then
+            rem Do nothing if the newest version or newer is installed
+            methodret
+        endif 
+
+        declare File currentProgramFile!
+        currentProgramFile! = new File(BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj"))
+
+        declare File backupFile!
+        backupFile! = new File(#pluginsDirectory!, "PluginManagerLauncher_back.bbj")
+        backupFile!.createNewFile()
+
+        arr! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(arr!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(arr!, 0, StandardCopyOption.REPLACE_EXISTING)
+
+        Files.move(currentProgramFile!.toPath(), backupFile!.toPath(), arr!)
+
+        declare File newProgramFile!
+        newProgramFile! = new File(#pluginManagerDirectory!, "update/PluginManagerLauncher.bbj")
+
+        Files.copy(newProgramFile!.toPath(), currentProgramFile!.toPath(), arr!)
+    methodend
+
+    rem /**
+    rem  * Updates the PluginManager/bbj-plugin-list.json file which contains the
+    rem  * list of available plugins.
+    rem  */
+    method public void updatePluginList()
+        declare File downloadedFile! 
+        downloadFile! = File.createTempFile("bbj-plugin-list", ".json")
+        
+        declare DownloadHelper downloadHelper!
+        downloadHelper! = new DownloadHelper()
+        
+        downloadHelper!.setDownloadURL(#PM_LIST_FILE_URL!)
+        downloadHelper!.setOutputFile(downloadFile!)
+        downloadHelper!.downloadFile(Boolean.FALSE)
+
+        if !downloadHelper!.wasDownloadSuccessful() then
+            throw "Failed to update the bbj-plugin-list.json file", 300
+        endif
+
+        declare File pluginListFile!
+        pluginListFile! = new File(#pluginManagerDirectory!, "bbj-plugin-list.json")
+
+        arr! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(arr!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(arr!, 0, StandardCopyOption.REPLACE_EXISTING)
+
+        Files.move(downloadFile!.toPath(), pluginListFile!.toPath(), arr!)
+    methodend
+
+    rem /**
+    rem  * Returns true if a newer version of the PluginManager is available,
+    rem  * false otherwise.
+    rem  * 
+    rem  * When the PluginManager is installed, the last commit's checksum is also
+    rem  * saved in the install.json file. This method compares the PluginManager 
+    rem  * Github repository's last commit checksum to the commmit checksum saved 
+    rem  * during the installation in order to detemine whether an update is 
+    rem  * available for the PluginManager.
+    rem  * 
+    rem  * @return true if an update is available, false otherwise
+    rem  */
+    method public Boolean isPluginManagerUpdateAvailable()
+        methodret Boolean.FALSE
+    methodend
+
+    rem /**
+    rem  * Updates the PluginManager by downloading the latest version the 
+    rem  * plugin's Github repository. The method also saved the last commit's
+    rem  * checksum in the install.json file in order to be able to determine 
+    rem  * if a PluginManager update is available or not.
+    rem  */
+    method public void updatePluginManager()
+        rem #PM_PROJECT_URL!
+
+        rem download the zip
+        rem extract the zip 
+        rem get the commit checksum 
+        rem add it to the install.json
+    methodend
+
+classend
+
+declare PluginManagerUpdater updater!
+updater! = new PluginManagerUpdater()
+updater!.updatePluginList()
