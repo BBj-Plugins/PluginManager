@@ -311,6 +311,11 @@ class public PluginManager
         methodret version!
     methodend
 
+    rem /**
+    rem  * Compares the two given version numbers and returns 1
+    rem  * if the first version is higher than the second one, -1
+    rem  * if the second version is higher and 0 if the versions are equal.
+    rem  */
     method public BBjNumber compare(String versionA!, String versionB!)
         rem Removing possible version prefixes so that the comparison works properly
         versionA! = #removeVersionPrefix(versionA!)
@@ -325,11 +330,23 @@ class public PluginManager
         endif
 
         for i=0 to length-1
-            if num(splitA!.get(i)) > num(splitB!.get(i)) then
+            versionLength = len(splitA!.get(i))
+            if len(splitB!.get(i)) > versionLength then
+                versionLength = len(splitB!.get(i))
+            endif
+
+            versionA = num(pad(splitA!.get(i), versionLength, "R", "0"))
+            versionB = num(pad(splitB!.get(i), versionLength, "R", "0"))
+
+            if versionA = versionB then
+                continue
+            endif
+
+            if versionA > versionB then
                 methodret 1
             endif
 
-            if num(splitA!.get(i)) < num(splitB!.get(i)) then
+            if versionA < versionB then
                 methodret -1
             endif
         next i
