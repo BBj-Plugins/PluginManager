@@ -497,7 +497,7 @@ class public PluginManagerLauncher
     rem  * @param zipFile! The zip file handle.
     rem  * @param outputFolder! The output directory in which the content of the zip file will be extracted.
     rem  */ 
-    method public void unzipArchive(File zipFile!, File outputFolder!)
+    method public static void unzipArchive(File zipFile!, File outputFolder!)
         seterr unzipArchive_ErrorHandler
 
             rem Hack to create a byte[1024] in BBj
