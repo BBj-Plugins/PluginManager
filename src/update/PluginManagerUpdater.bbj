@@ -1,5 +1,7 @@
 use java.io.File
+
 use java.net.URL
+use java.net.HttpURLConnection
 
 use java.nio.file.Files
 use java.nio.file.StandardCopyOption
@@ -125,7 +127,37 @@ class public PluginManagerUpdater
     rem  * @return true if an update is available, false otherwise
     rem  */
     method public Boolean isPluginManagerUpdateAvailable()
-        methodret Boolean.FALSE
+        declare URL repositoryURL!
+        repositoryURL! = new URL("https://api.github.com/repos/BBj-Plugins/PluginManager/branches/master")
+
+        connection! = cast(HttpURLConnection,repositoryURL!.openConnection())
+        connection!.setRequestMethod("GET")
+        connection!.setRequestProperty("Accept", "appliation/json")
+        connection!.setRequestProperty("Accept","v3")
+
+        response = connection!.getResponseCode()
+
+        builder! = new StringBuilder()
+        br! = new BufferedReader(new InputStreamReader(connection!.getInputStream()),err=*next)
+
+        if br! = null() then
+            methodret ""
+        endif
+
+        line! = br!.readLine()
+        while(line! <> null())
+            builder!.append(line!)
+            line! = br!.readLine()
+        wend
+
+        connection!.disconnect()
+
+        builder!.toString()
+        
+
+        rem https://api.github.com/repos/BBj-Plugins/PluginManager/branches/master
+        rem Obj > commit 
+        rem sha
     methodend
 
     rem /**
@@ -135,7 +167,40 @@ class public PluginManagerUpdater
     rem  * if a PluginManager update is available or not.
     rem  */
     method public void updatePluginManager()
-        rem #PM_PROJECT_URL!
+        if !#isPluginManagerUpdateAvailable() then
+            rem latest version is installed
+            rem do nothing
+            methodret
+        endif
+
+        declare File downloadedFile! 
+        downloadFile! = File.createTempFile("PluginManager", ".zip")
+        
+        declare DownloadHelper downloadHelper!
+        downloadHelper! = new DownloadHelper()
+
+        downloadHelper!.setDownloadURL(#PM_PROJECT_URL!)
+        downloadHelper!.setOutputFile(downloadFile!)
+        downloadHelper!.downloadFile(Boolean.FALSE)
+
+        if !downloadHelper!.wasDownloadSuccessful() then
+            throw "Failed to update the bbj-plugin-list.json file", 300
+        endif
+
+        rem unzip the archive file 
+        tempPluginDirectory! = new File(#pluginsDirectory!, str(System.currentTimeMillis()))
+
+        rem unpack the PluginManager.zip into the temp file
+        PluginManagerLauncher.unzipArchive(downloadFile!, tempPluginDirectory!)
+
+        rem at this point, we have the new PluginManager version in a temp directory 
+        rem move it into the bbj/plugins directory and rename it
+
+        arr! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(arr!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(arr!, 0, StandardCopyOption.REPLACE_EXISTING)
+
+        rem Files.move(tempPluginDirectory!.toPath(), #pluginManagerDirectory!.toPath(), arr!)
 
         rem download the zip
         rem extract the zip 
@@ -143,8 +208,27 @@ class public PluginManagerUpdater
         rem add it to the install.json
     methodend
 
+    rem /**
+    rem  * Returns the installed PluginManager's commit hash.
+    rem  * This commit hash will be used to identify whether the 
+    rem  * installed PluginManager is up to date or not.
+    rem  * 
+    rem  * @return the installed PluginManager's commit hash.
+    rem  */
+    method private String getInstalledPluginManagerCommitHash()
+
+    methodend
+
 classend
 
 declare PluginManagerUpdater updater!
 updater! = new PluginManagerUpdater()
-updater!.updatePluginList()
+rem updater!.updatePluginList()
+
+updater!.isPluginManagerUpdateAvailable()
+
+rem unit tests
+rem 1. Download the plugin list 
+rem 2. Check if the file has changed on disk ? 
+rem 3. Update plugin manager
+rem 4. The hash should change on disk 
