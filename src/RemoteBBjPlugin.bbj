@@ -1,5 +1,6 @@
 use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
+use ::PluginManager/src/TagVersionComparator.bbj::TagVersionComparator
 
 use java.util.Arrays
 use java.util.TreeMap
@@ -142,29 +143,7 @@ class public RemoteBBjPlugin extends BBjPlugin
         endif
 
         if(orderByNewestVersion!) then
-            declare Tag masterTag!
-            declare TreeMap treeMap!
-            treeMap! = new TreeMap()
-
-            it! = tagList!.iterator()
-            while(it!.hasNext())
-                tag! = cast(Tag, it!.next())
-
-                if(tag!.isMaster()) then
-                    masterTag! = cast(Tag, tag!)
-                    continue
-                endif
-
-                treeMap!.put(tag!.getName(), tag!)
-            wend
-
-            list! = new ArrayList(Arrays.asList(treeMap!.values().toArray()))
-            java.util.Collections.reverse(list!)
-            tagList! = cast(ArrayList, list!)
-
-            if(includeMaster! AND masterTag! <> null()) then
-                tagList!.add(0, masterTag!)
-            endif
+            java.util.Collections.sort(tagList!, new TagVersionComparator())
         endif
 
         methodret tagList!
