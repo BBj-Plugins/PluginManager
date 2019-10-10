@@ -1,0 +1,96 @@
+use java.util.Comparator
+use java.util.Arrays
+
+use ::PluginManager/src/Tag.bbj::Tag
+
+class public TagVersionComparator implements Comparator
+
+    method public int compare(Object tagA!, Object tagB!)
+        versionA! = cast(Tag, tagA!).getName()
+        versionb! = cast(Tag, tagB!).getName()
+
+        if versionA! = "master" then
+            if versionA! = versionB! then
+                methodret 0
+            endif
+
+            methodret -1
+        endif
+
+        if versionB! = "master" then
+            methodret 1
+        endif
+
+        rem Removing possible version prefixes so that the comparison works properly
+        versionA! = #removeVersionPrefix(versionA!)
+        versionB! = #removeVersionPrefix(versionB!)
+        
+        splitA! = Arrays.asList(versionA!.split("\.|-"))
+        splitB! = Arrays.asList(versionB!.split("\.|-"))
+
+        length = splitA!.size()
+        if splitB!.size() < length then
+            length = splitB!.size()
+        endif
+
+        for i=0 to length-1
+            versionLength = len(splitA!.get(i))
+            if len(splitB!.get(i)) > versionLength then
+                versionLength = len(splitB!.get(i))
+            endif
+
+            versionA = num(pad(splitA!.get(i), versionLength, "R", "0"))
+            versionB = num(pad(splitB!.get(i), versionLength, "R", "0"))
+
+            if versionA = versionB then
+                continue
+            endif
+
+            if versionA > versionB then
+                methodret -1
+            endif
+
+            if versionA < versionB then
+                methodret 1
+            endif
+        next i
+
+        if splitA!.size() > splitB!.size() then
+            methodret -1
+        endif
+
+        if splitA!.size() < splitB!.size() then
+            methodret 1
+        endif
+
+        methodret 0
+    methodend
+
+    rem /**
+    rem  * Some plugin version might start with version prefixes like for instance "v_1.0".
+    rem  * This method removes those prefixes so that the version comparison doesn't fail.
+    rem  *
+    rem  * @param version! The version String to adapt
+    rem  * @return The version String without any version prefix
+    rem  */
+    method private String removeVersionPrefix(String version!)
+        rem return the version if has no prefix
+        if Character.isDigit(version!.charAt(0)) then
+            methodret version!
+        endif
+
+        for i=0 to version!.length() -1
+            if Character.isDigit(version!.charAt(i)) then
+                version! = version!.substring(i)
+                break
+            endif
+        next i
+
+        methodret version!
+    methodend
+
+    method public Boolean equals(Object obj!)
+        methodret Boolean.FALSE
+    methodend
+
+classend
