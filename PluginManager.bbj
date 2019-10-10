@@ -20,6 +20,8 @@ use java.io.IOException
 use java.io.BufferedReader
 use java.io.InputStreamReader
 
+use ::PluginManager/src/TagVersionComparator.bbj::TagVersionComparator
+
 use ::PluginManager/gen/BBjPluginJsonGenerator.bbj::BBjPluginJsonGenerator
 
 use ::PluginManager/src/Tag.bbj::Tag
@@ -52,11 +54,12 @@ class public PluginManager
     field private InstalledPluginFolderParser pluginFolderParser!
 
     method public PluginManager()
-        rem get the home directory
-        #pluginsHome! = PluginManagerLauncher.getPluginsHomeDirectory()
-        #pluginManagerDirectory! = new File(#pluginsHome!, "PluginManager")
+        #pluginManagerLauncher! = new PluginManagerLauncher()
+        #pluginsHome! = #pluginManagerLauncher!.getPluginsHome()
 
         #authService! = new AuthenticationService()
+
+        #pluginManagerDirectory! = new File(#pluginsHome!, "PluginManager")
 
         #githubApiService! = new GithubApiService()
         #pluginJsonGenerator! = new BBjPluginJsonGenerator()
@@ -89,6 +92,44 @@ class public PluginManager
 
         rem mark plugins as installed or not installed depending on the remote plugin list
         #initialisePluginState()
+
+        installedVersion = 0
+        installedVersion = PluginManagerLauncher.getProgramVersion(err=*next)
+
+        incorporatedVersion = 0
+        incorporatedVersion = ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher.getProgramVersion(err=*next)
+
+        if(incorporatedVersion > installedVersion) then
+            declare StringBuilder sb!
+            sb! = new StringBuilder()
+            sb!.append("An update is available for the PluginManagerLauncher.bbj program.")
+            sb!.append("Would you like to perform an update (the currently installed program will be renamed so that you can always perform a rollback) ?")
+            a = msgbox(sb!.toString(), 4)
+
+            if(a = 6) then
+                #updateLauncher()
+            endif
+        endif
+    methodend
+
+    method private void updateLauncher()
+        declare File currentProgramFile!
+        currentProgramFile! = new File(BBjAPI().getFileSystem().resolvePath("PluginManagerLauncher.bbj"))
+
+        declare File backupFile!
+        backupFile! = new File(#pluginsHome!, "PluginManagerLauncher_back.bbj")
+        backupFile!.createNewFile()
+
+        arr! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        Array.set(arr!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(arr!, 0, StandardCopyOption.REPLACE_EXISTING)
+
+        Files.move(currentProgramFile!.toPath(), backupFile!.toPath(), arr!)
+
+        declare File newProgramFile!
+        newProgramFile! = new File(#pluginManagerDirectory!, "update/PluginManagerLauncher.bbj")
+
+        Files.move(newProgramFile!.toPath(), currentProgramFile!.toPath(), arr!)
     methodend
 
     method public void addCustomBBjPluginRepository(String url!, Boolean useCredentials!)
@@ -247,63 +288,6 @@ class public PluginManager
                 installedPlugin!.setUpdateAvailable(Boolean.TRUE)
             rem endif
         endif
-    methodend
-
-    rem /**
-    rem  * Some plugin version might start with version prefixes like for instance "v_1.0".
-    rem  * This method removes those prefixes so that the version comparison doesn't fail.
-    rem  *
-    rem  * @param version! The version String to adapt
-    rem  * @return The version String without any version prefix
-    rem  */
-    method private String removeVersionPrefix(String version!)
-        rem return the version if has no prefix
-        if Character.isDigit(version!.charAt(0)) then
-            methodret version!
-        endif
-
-        for i=0 to version!.length() -1
-            if Character.isDigit(version!.charAt(i)) then
-                version! = version!.substring(i)
-                break
-            endif
-        next i
-
-        methodret version!
-    methodend
-
-    method public BBjNumber compare(String versionA!, String versionB!)
-        rem Removing possible version prefixes so that the comparison works properly
-        versionA! = #removeVersionPrefix(versionA!)
-        versionB! = #removeVersionPrefix(versionB!)
-
-        splitA! = Arrays.asList(versionA!.split("\.|-"))
-        splitB! = Arrays.asList(versionB!.split("\.|-"))
-
-        length = splitA!.size()
-        if splitB!.size() < length then
-            length = splitB!.size()
-        endif
-
-        for i=0 to length-1
-            if num(splitA!.get(i)) > num(splitB!.get(i)) then
-                methodret 1
-            endif
-
-            if num(splitA!.get(i)) < num(splitB!.get(i)) then
-                methodret -1
-            endif
-        next i
-
-        if splitA!.size() > splitB!.size() then
-            methodret 1
-        endif
-
-        if splitA!.size() < splitB!.size() then
-            methodret -1
-        endif
-
-        methodret 0
     methodend
 
     method public BBjPlugin getInstalledPlugin(String pluginName!)
@@ -481,21 +465,25 @@ class public PluginManager
 
             declare ArrayList tagList!
             tagList! = remotePlugin!.getTagList(Boolean.FALSE, Boolean.TRUE)
+            java.util.Collections.sort(tagList!, new TagVersionComparator())
 
-            declare Iterator it!
-            it! = tagList!.iterator()
+            tag! = cast(Tag, tagList!.get(0))
+            rem TODO 
 
-            while(it!.hasNext())
-                currentTag! = cast(Tag, it!.next())
+            rem declare Iterator it!
+            rem it! = tagList!.iterator()
 
-                if #compare(currentTag!.getName(), tag!.getName()) = 1 then
-                rem if(num(currentTag!.getName()) > num(tag!.getName())) then
-                    latestVersionTagName! = currentTag!.getName()
-                    break
-                endif
-            wend
+            rem while(it!.hasNext())
+            rem     currentTag! = cast(Tag, it!.next())
 
-            tag! = cast(Tag, remotePlugin!.getTag(latestVersionTagName!))
+            rem     if #compare(currentTag!.getName(), tag!.getName()) = 1 then
+            rem     rem if(num(currentTag!.getName()) > num(tag!.getName())) then
+            rem         latestVersionTagName! = currentTag!.getName()
+            rem         break
+            rem     endif
+            rem wend
+
+            rem tag! = cast(Tag, remotePlugin!.getTag(latestVersionTagName!))
         endif
 
         rem TODO Make sure not to delete any files that the user created 

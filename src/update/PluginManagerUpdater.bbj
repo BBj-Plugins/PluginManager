@@ -1,4 +1,7 @@
 use java.io.File
+use java.io.FileReader
+use java.io.BufferedReader
+use java.io.InputStreamReader
 
 use java.net.URL
 use java.net.HttpURLConnection
@@ -7,6 +10,9 @@ use java.nio.file.Files
 use java.nio.file.StandardCopyOption
 
 use java.lang.reflect.Array
+
+use com.google.gson.JsonObject
+use com.google.gson.JsonParser
 
 use ::PluginManager/update/PluginManagerLauncher.bbj::DownloadHelper
 use ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher
@@ -138,10 +144,10 @@ class public PluginManagerUpdater
         response = connection!.getResponseCode()
 
         builder! = new StringBuilder()
-        br! = new BufferedReader(new InputStreamReader(connection!.getInputStream()),err=*next)
+        br! = new BufferedReader(new InputStreamReader(connection!.getInputStream()), err=*next)
 
         if br! = null() then
-            methodret ""
+            methodret Boolean.FALSE
         endif
 
         line! = br!.readLine()
@@ -150,14 +156,34 @@ class public PluginManagerUpdater
             line! = br!.readLine()
         wend
 
+        rem closing the http connection
         connection!.disconnect()
 
-        builder!.toString()
-        
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
 
-        rem https://api.github.com/repos/BBj-Plugins/PluginManager/branches/master
-        rem Obj > commit 
-        rem sha
+        declare JsonObject jsonObject!
+        jsonObject! = jsonParser!.parse(builder!.toString()).getAsJsonObject()
+        if !jsonObject!.has("commit") then
+            rem something went wrong 
+            methodret Boolean.FALSE
+        endif   
+
+        commit! = jsonObject!.get("commit").getAsJsonObject()
+        if !commit!.has("sha") then
+            rem something went wrong
+            methodret Boolean.FALSE
+        endif
+
+        latestCommitHash! = commit!.get("sha").getAsString()
+        installedCommitHash! = #getInstalledPluginManagerCommitHash()
+
+        rem the hash differs to the latest version --> An update is available
+        if latestCommitHash! <> installedCommitHash! then
+            methodret Boolean.TRUE    
+        endif
+
+        methodret Boolean.FALSE
     methodend
 
     rem /**
@@ -167,12 +193,6 @@ class public PluginManagerUpdater
     rem  * if a PluginManager update is available or not.
     rem  */
     method public void updatePluginManager()
-        if !#isPluginManagerUpdateAvailable() then
-            rem latest version is installed
-            rem do nothing
-            methodret
-        endif
-
         declare File downloadedFile! 
         downloadFile! = File.createTempFile("PluginManager", ".zip")
         
@@ -216,7 +236,27 @@ class public PluginManagerUpdater
     rem  * @return the installed PluginManager's commit hash.
     rem  */
     method private String getInstalledPluginManagerCommitHash()
+        if #pluginManagerDirectory! = null() then
+            methodret null()
+        endif
 
+        declare File installJsonFile!
+        installJsonFile! = new File(#pluginManagerDirectory!, "install.json")
+
+        if !installJsonFile!.exists() then 
+            methodret null()
+        endif
+
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
+
+        declare JsonObject jsonObject!
+        jsonObject! = jsonParser!.parse(new FileReader(installJsonFile!)).getAsJsonObject()
+        if jsonObject!.has("sha") then
+            methodret jsonObject!.get("sha").getAsString()
+        endif       
+
+        methodret null()
     methodend
 
 classend
@@ -224,6 +264,7 @@ classend
 declare PluginManagerUpdater updater!
 updater! = new PluginManagerUpdater()
 rem updater!.updatePluginList()
+rem ? updater!.getInstalledPluginManagerCommitHash()
 
 updater!.isPluginManagerUpdateAvailable()
 
