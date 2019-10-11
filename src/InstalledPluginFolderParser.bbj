@@ -47,13 +47,23 @@ class public InstalledPluginFolderParser
         while(it!.hasNext())
             currentFile! = cast(File, it!.next())
 
-            if(currentFile!.isDirectory() AND !currentFile!.getName().equals("PluginManager")) then
-                if(#isBBjPlugin(currentFile!)) then
-                    installedPlugin! = #getInstalledPluginFromDirectory(currentFile!)
-                    if(installedPlugin! <> null()) then
-                        pluginList!.add(installedPlugin!)
-                    endif
-                endif
+            if(!currentFile!.isDirectory()) then
+                continue
+            endif
+
+            if(currentFile!.getName().equals("PluginManager")) then
+                rem skip the PluginManager directory
+                continue
+            endif
+
+            if(!#isBBjPlugin(currentFile!)) then
+                rem if the directory is not a BBj plugin, do nothing
+                continue
+            endif
+
+            installedPlugin! = #getInstalledPluginFromDirectory(currentFile!)
+            if(installedPlugin! <> null()) then
+                pluginList!.add(installedPlugin!)
             endif
         wend
 
@@ -152,7 +162,7 @@ class public InstalledPluginFolderParser
         declare JsonObject jsonObject!
         jsonObject! = jsonParser!.parse(jsonFileReader!).getAsJsonObject()
 
-        installedPlugin!.setName(jsonObject!.get("name").getAsString())
+        installedPlugin!.setDisplayName(jsonObject!.get("name").getAsString())
         installedPlugin!.setDescription(jsonObject!.get("description").getAsString())
         installedPlugin!.setVersion(jsonObject!.get("version").getAsString())
         installedPlugin!.setAuthor(jsonObject!.get("author").getAsString())
@@ -168,6 +178,12 @@ class public InstalledPluginFolderParser
 
         if(jsonObject!.has("id")) then
             installedPlugin!.setID(jsonObject!.get("id").getAsInt())
+        endif
+
+        if(jsonObject!.has("name")) then
+            installedPlugin!.setName(jsonObject!.get("name").getAsString())
+        else
+            installedPlugin!.setName("")
         endif
 
         if(jsonObject!.has("project_url")) then

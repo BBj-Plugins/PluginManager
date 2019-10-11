@@ -1,5 +1,3 @@
-use java.io.File
-
 use java.util.Base64
 use java.util.HashMap
 use java.util.Iterator
@@ -19,6 +17,8 @@ use com.google.gson.JsonObject
 use java.io.IOException
 use java.io.BufferedReader
 use java.io.InputStreamReader
+
+use java.io.File
 
 use ::PluginManager/src/TagVersionComparator.bbj::TagVersionComparator
 
@@ -72,6 +72,11 @@ class public PluginManager
         bbjPluginListFile! = new File(#pluginManagerDirectory!, "bbj-plugin-list.json")
         #remotePlugins! = BBjPluginListParser.parse(bbjPluginListFile!)
 
+        rem Maps the correct plugin names to the installed plugins
+        rem This method was created because some people used a different plugin
+        rem name in the bbj-plugin.json than the Github project repository name 
+        #installationService!.mapPluginNames()
+
         declare File customPluginListFile!
         customPluginListFile! = new File(#pluginManagerDirectory!, "custom-plugin-list.json")
         #customPluginListHandler! = new CustomPluginListHandler(customPluginListFile!)
@@ -83,6 +88,7 @@ class public PluginManager
                 for i=0 to customSourcePluginList!.size()-1
                     cast(RemoteBBjPlugin, customSourcePluginList!.get(i)).setCustomSourcePlugin(Boolean.TRUE)
                 next i
+                
                 #remotePlugins!.addAll(customSourcePluginList!)
             endif
         endif

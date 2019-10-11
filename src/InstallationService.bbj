@@ -1,14 +1,12 @@
 use java.io.File
 use java.io.FileWriter
+use java.io.FileReader
 
 use java.nio.file.Files
 
 use java.util.Arrays
 use java.util.Iterator
 use java.util.ArrayList
-
-use com.google.gson.JsonArray
-use com.google.gson.JsonObject
 
 use java.lang.reflect.Array
 use java.nio.file.StandardCopyOption
@@ -25,8 +23,6 @@ use java.net.URL
 use java.net.URLConnection
 use java.net.HttpURLConnection
 
-use java.lang.Boolean
-
 use java.io.InputStream
 use java.io.OutputStream
 use java.io.BufferedReader
@@ -38,7 +34,9 @@ use java.io.BufferedOutputStream
 use java.io.ByteArrayInputStream
 use java.io.ByteArrayOutputStream
 
+use com.google.gson.JsonArray
 use com.google.gson.JsonParser
+use com.google.gson.JsonObject
 use com.google.gson.JsonElement
 use com.google.gson.JsonFactory
 use com.google.gson.JsonPrimitive
@@ -128,6 +126,7 @@ class public InstallationService
         declare JsonObject jsonObject!
         jsonObject! = new JsonObject()
         jsonObject!.addProperty("id", installedPlugin!.getID().intValue())
+        jsonObject!.addProperty("name", installedPlugin!.getName())
         jsonObject!.addProperty("project_url", installedPlugin!.getProjectURL())
 
         declare SimpleDateFormat sdf!
@@ -221,6 +220,63 @@ class public InstallationService
         #executeHookPrograms(tag!.getPostInstallHookProgramList(), pluginDirectory!)
 
         methodret installedPlugin!
+    methodend
+
+    rem /**
+    rem  * Iterates through the list of installed plugins and sets the names 
+    rem  * according to the remote plugin's name. 
+    rem  * 
+    rem  * This method was created because in some cases the bbj plugin repository 
+    rem  * name differed from the plugin name defined in the bbj-plugin.json
+    rem  * causing some strange side effects. 
+    rem  */
+    method public void mapPluginNames(ArrayList installedPlugins!, ArrayList remotePlugins!)
+        if installedPlugins!.isEmpty() then
+            methodret
+        endif
+
+        declare auto InstalledBBjPlugin installedPlugin!
+        declare auto RemoteBBjPlugin remotePlugin!
+
+        declare JsonParser jsonParser!
+        jsonParser! = new JsonParser()
+
+        declare FileWriter fileWriter!
+
+        declare File installJsonFile!
+        declare File installationDirectory!
+
+        for i=0 to installedPlugins!.size() -1
+            installedPlugin! = installedPlugins!.get(i)
+
+            if(installedPlugin!.getName().isEmpty()) then
+                continue
+            endif
+
+            for j=0 to remotePlugins!.size() -1
+                remotePlugin! = remotePlugins!.get(j)
+                if remotePlugin!.getID() <> installedPlugin!.getID() then
+                    continue
+                endif
+                
+                installedPlugin!.setName(remotePlugin!.getName())
+
+                rem Saving the plugin name in the install.json file so that this routine is not
+                rem required to run a second time for this plugin
+                installationDirectory! = installedPlugin!.getInstallationDirectory()
+                installJsonFile! = new File(installationDirectory!, "install.json")
+
+                if(installJsonFile!.exists() AND installJsonFile!.isFile() AND installJsonFile!.canWrite()) then
+                    jsonFileReader!  = new FileReader(installJsonFile!)
+                    jsonObject! = jsonParser!.parse(jsonFileReader!).getAsJsonObject()
+                    jsonObject!.addProperty("name", remotePlugin!.getName())
+                    
+                    fileWriter! = new FileWriter(installJsonFile!)
+                    fileWriter!.write(jsonObject!.toString())
+                    fileWriter!.close()
+                endif
+            next j            
+        next i
     methodend
 
     method public void uninstallPlugin(InstalledBBjPlugin installedPlugin!)
