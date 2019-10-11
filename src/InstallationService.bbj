@@ -249,7 +249,7 @@ class public InstallationService
         for i=0 to installedPlugins!.size() -1
             installedPlugin! = installedPlugins!.get(i)
 
-            if(installedPlugin!.getName().isEmpty()) then
+            if(!installedPlugin!.getName().isEmpty()) then
                 continue
             endif
 
