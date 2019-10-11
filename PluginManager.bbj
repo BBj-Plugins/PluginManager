@@ -75,7 +75,7 @@ class public PluginManager
         rem Maps the correct plugin names to the installed plugins
         rem This method was created because some people used a different plugin
         rem name in the bbj-plugin.json than the Github project repository name 
-        #installationService!.mapPluginNames()
+        #installationService!.mapPluginNames(#installedPlugins!, #remotePlugins!)
 
         declare File customPluginListFile!
         customPluginListFile! = new File(#pluginManagerDirectory!, "custom-plugin-list.json")
