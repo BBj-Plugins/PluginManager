@@ -3,8 +3,24 @@ use java.util.Arrays
 
 use ::PluginManager/src/Tag.bbj::Tag
 
+rem /**
+rem  * <h1>TagVersionComparator</h1>
+rem  * 
+rem  * This class implements the java.util.Comparator interface and is used to sort 
+rem  * a list of Tag objects in an efficent way.
+rem  */
 class public TagVersionComparator implements Comparator
 
+    rem /**
+    rem  * Returns -1 if the tag passed as first argument has a higher version number 
+    rem  * than the tag passed as second parameter. If the second tag's version is higher, 
+    rem  * 1 is returned. If they are equal, 0 is returned.
+    rem  * 
+    rem  * @param tagA! The first tag to compare 
+    rem  * @param tagB! The second tag to compare
+    rem  *  
+    rem  * @return -1 if the version of tagA! is higher, 1 of the one of tagB! is higher, else 0.
+    rem  */
     method public int compare(Object tagA!, Object tagB!)
         versionA! = cast(Tag, tagA!).getName()
         versionb! = cast(Tag, tagB!).getName()
