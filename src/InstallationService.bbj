@@ -334,7 +334,7 @@ class public InstallationService
         Array.set(copyOptions!, 1, StandardCopyOption.REPLACE_EXISTING)
 
         Files.copy(directory!.toPath(), target!.toPath(), copyOptions!)
-        #deleteDirectory(pluginDirectory!)
+        #deleteDirectory(directory!)
     methodend
 
     rem /**
