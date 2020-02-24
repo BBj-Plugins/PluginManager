@@ -319,22 +319,17 @@ class public InstallationService
 
     rem /**
     rem  * Moves the given directory to the given target directory. 
-    rem  * This method performs a copy + delete instead of an actually move 
-    rem  * operation, because the java.nio.file.Files::move method throws
-    rem  * an AccessDeniedException if f.e. the windows explorer is opened in the 
-    rem  * plug-in's directory. This Exception is not thrown using copy + delete 
-    rem  * which performs the same steps as the actual move.
     rem  * 
     rem  * @param directory! The directory to be moved into the target
     rem  * @param target! The target directory where the directory is going to be moved
     rem  */
     method public void move(File directory!, File target!)
-        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 2)
-        Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
-        Array.set(copyOptions!, 1, StandardCopyOption.REPLACE_EXISTING)
+        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
+        rem Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(copyOptions!, 0, StandardCopyOption.REPLACE_EXISTING)
 
-        Files.copy(directory!.toPath(), target!.toPath(), copyOptions!)
-        #deleteDirectory(directory!)
+        Files.move(directory!.toPath(), target!.toPath(), copyOptions!)
+        rem #deleteDirectory(directory!)
     methodend
 
     rem /**
