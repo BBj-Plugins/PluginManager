@@ -96,12 +96,8 @@ class public InstallationService
             #deleteDirectory(pluginDirectory!)    
         endif
 
-        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
-        Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
-        Array.set(copyOptions!, 0, StandardCopyOption.REPLACE_EXISTING)
-
-        rem renaming the plugin = starting to install it
-        Files.move(tempPluginDirectory!.toPath(), pluginDirectory!.toPath(), copyOptions!)
+        rem moving the plug-in to its final directory
+        #move(tempPluginDirectory!, pluginDirectory!)
 
         remotePlugin!.setInstalled(Boolean.TRUE)
 
@@ -286,20 +282,26 @@ class public InstallationService
         rem Executing the pre-uninstall hook programs
         #executeHookPrograms(tag!.getPreUninstallHookProgramList(), pluginDirectory!)
 
+        rem if the plug-in doesn't have any post installation hooks, delete the plugin directory
+        if tag!.getPostUninstallHookProgramList().isEmpty() then
+            rem deleting the plugin directory = uninstalling it 
+            #deleteDirectory(pluginDirectory!) 
+
+            methodret 
+        endif
+        
+        rem the plug-in has post installation hooks, therefore the plug-in is moved in to 
+        rem a temp directory, then its hooks are executed and finally the plug-in is removed i.e. uninstalled
         tempPluginDirectory! = new File(pluginDirectory!.getParent(), str(System.currentTimeMillis()))
 
-        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 1)
-        Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
-        Array.set(copyOptions!, 0, StandardCopyOption.REPLACE_EXISTING)
-
-        rem Rename the plugin directory to prepare it for the uninstall process
-        Files.move(pluginDirectory!.toPath(), tempPluginDirectory!.toPath(), copyOptions!)
+        rem moving the plug-in's directory into a temp directory
+        #move(pluginDirectory!, tempPluginDirectory!)
 
         rem execute the post uninstall hooks 
         #executeHookPrograms(tag!.getPostUninstallHookProgramList(), tempPluginDirectory!)
 
         rem deleting the plugin directory = uninstalling it 
-        #deleteDirectory(tempPluginDirectory!)        
+        #deleteDirectory(tempPluginDirectory!) 
     methodend
 
     method private void executeHookPrograms(ArrayList hookProgramList!, File workingDirectory!)
@@ -313,6 +315,26 @@ class public InstallationService
         for i=0 to hookProgramList!.size() -1
             a = scall(command! + hookProgramList!.get(i))
         next i
+    methodend
+
+    rem /**
+    rem  * Moves the given directory to the given target directory. 
+    rem  * This method performs a copy + delete instead of an actually move 
+    rem  * operation, because the java.nio.file.Files::move method throws
+    rem  * an AccessDeniedException if f.e. the windows explorer is opened in the 
+    rem  * plug-in's directory. This Exception is not thrown using copy + delete 
+    rem  * which performs the same steps as the actual move.
+    rem  * 
+    rem  * @param directory! The directory to be moved into the target
+    rem  * @param target! The target directory where the directory is going to be moved
+    rem  */
+    method public void move(File directory!, File target!)
+        copyOptions! = Array.newInstance(Class.forName("java.nio.file.StandardCopyOption"), 2)
+        Array.set(copyOptions!, 0, StandardCopyOption.COPY_ATTRIBUTES)
+        Array.set(copyOptions!, 1, StandardCopyOption.REPLACE_EXISTING)
+
+        Files.copy(directory!.toPath(), target!.toPath(), copyOptions!)
+        #deleteDirectory(pluginDirectory!)
     methodend
 
     rem /**
