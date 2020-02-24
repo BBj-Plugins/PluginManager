@@ -1,0 +1,95 @@
+use java.io.File
+
+use ::PluginManager/PluginManager.bbj::PluginManager
+use ::PluginManager/src/BBjPlugin.bbj::BBjPlugin
+use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/InstallationService.bbj::InstallationService
+use ::PluginManager/update/PluginManagerLauncher.bbj::PluginManagerLauncher
+
+class public InstallationServiceTest
+
+    field private PluginManager manager!
+    field private InstallationService installer!
+    field private PluginManagerLauncher launcher!
+
+    rem @Before
+    method public void setUp()
+        #manager! = new PluginManager()
+        #installer! = new InstallationService()
+        #launcher! = new PluginManagerLauncher()
+    methodend
+
+    rem @Test
+    method public void installPluginTest()
+        rem Make sure the plugin is not installed when running the tests
+        installedPlugin! = #manager!.getInstalledPlugin("BBjWidget")
+        if installedPlugin! <> null() then
+            #manager!.uninstallPlugin(installedPlugin!)
+        endif 
+
+        installedPlugin! = null()
+
+        declare auto RemoteBBjPlugin plugin!
+        plugin! = #manager!.getRemotePlugin("BBjWidget")
+        tag! = plugin!.getLatestVersionTag()
+
+        Assert.IsNotNull("Failed to retrieve the BBjWidget plugin", plugin!)
+        Assert.IsNotNull("Failed to reteieve the BBjWidget tag object", tag!)
+
+        installedPlugin! = #installer!.installPlugin(plugin!, tag!)
+
+        rem Check if the plugin is not null i.e. was installed
+        Assert.IsNotNull(installedPlugin!)
+        
+        rem Check if the plugin's name is correct
+        Assert.Equals("BBjWidget", installedPlugin!.getName())
+        
+        rem Check if the Directory now exists on disk 
+        pluginsHome! = #launcher!.getPluginsHome()
+        pluginInstallDirectory! = new File(pluginsHome!, "BBjWidget")
+
+        Assert.Equals(pluginInstallDirectory!.exists(), Boolean.TRUE)
+        Assert.Equals(pluginInstallDirectory!.isDirectory(), Boolean.TRUE)
+        Assert.Equals(pluginInstallDirectory!, installedPlugin!.getInstallationDirectory())
+
+        rem Check if the main program file exists
+        pgmFile! = new File(pluginInstallDirectory!, "BBjWidget.bbj")
+        Assert.Equals(pgmFile!.exists(), Boolean.TRUE)
+        Assert.Equals(pgmFile!.isFile(), Boolean.TRUE)
+
+        rem check if the install.json exists
+        installFile! = new File(pluginInstallDirectory!, "install.json")
+        Assert.Equals(installFile!.exists(), Boolean.TRUE)
+        Assert.Equals(installFile!.isFile(), Boolean.TRUE)
+    methodend
+
+    rem @Test
+    method public void uninstallPluginTest()
+        rem Make sure the plugin is not installed when running the tests
+        installedPlugin! = #manager!.getInstalledPlugin("BBjWidget")
+        if installedPlugin! = null() then
+            #manager!.installPlugin(installedPlugin!)
+        endif 
+
+        installedPlugin! = null()
+        installedPlugin! = #manager!.getInstalledPlugin("BBjWidget")
+        
+        rem check that the plugin is installed before trying to uninstall it
+        Assert.IsNotNull(installedPlugin!)
+        
+        rem Make sure the plugin directory exists before the deletion
+        pluginsHome! = #launcher!.getPluginsHome()
+        pluginInstallDirectory! = new File(pluginsHome!, "BBjWidget")
+
+        Assert.Equals(pluginInstallDirectory!.exists(), Boolean.TRUE)
+        Assert.Equals(pluginInstallDirectory!.isDirectory(), Boolean.TRUE)
+        Assert.Equals(pluginInstallDirectory!, installedPlugin!.getInstallationDirectory())
+
+        rem uninstall the plugin
+        #installer!.uninstallPlugin(installedPlugin!)
+
+        Assert.Equals(pluginInstallDirectory!.exists(), Boolean.FALSE)
+        Assert.Equals(pluginInstallDirectory!.isDirectory(), Boolean.FALSE)
+    methodend
+
+classend
