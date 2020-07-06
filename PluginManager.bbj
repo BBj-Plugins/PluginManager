@@ -516,10 +516,14 @@ class public PluginManager
         if !demoFolder!.exists() then
             demoFolder! = new File(installedPlugin!.getInstallationDirectory(), "demo")
         endif
+        
+        REM get my Current CommandLine object
+        myCFG! = BBjAPI().getConfig().getCurrentCommandLineObject()
+        myCFG!.setQuiet(Boolean.TRUE)
+        myCFG!.setProgramName(demoFolder!.getAbsolutePath() + File.separator + demoProgramName!)
 
-        command! = argv(0) + " -q " + demoFolder!.getAbsolutePath() + File.separator + demoProgramName!
-        print "launching: " + command!
-        a = scall(command! + " &")
+        REM Run my new BBj Session with my CommandLine Object
+        x = BBjAPI().newBBjSession(myCFG!)
     methodend
 
     rem /**
