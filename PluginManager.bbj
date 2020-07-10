@@ -375,6 +375,37 @@ class public PluginManager
     rem  * 
     rem  * @param pluginName! The name of the plugin to uninstall
     rem  */
+    method public void uninstallPlugin(String name!)
+        if(name! = null()) then
+            throw "Unknown plugin: " + name!, 255
+        endif
+
+        REM serach for plugin
+        declare Iterator it! 
+        declare ArrayList installedPlugins! 
+        
+        installedPlugins! = #getInstalledPluginList()
+        it! = installedPlugins!.iterator()
+        
+        if it!<>null() then 
+            declare InstalledBBjPlugin plugin!
+            plugin! = cast(InstalledBBjPlugin,it!.next())
+            if plugin!.getName()=name! then 
+                REM uninstall plugin
+                #installationService!.uninstallPlugin(plugin!)
+                methodret 
+            endif    
+        endif
+        
+        REM error out if nothing was found
+        throw "Unknown plugin: " + name!, 255
+       methodend
+
+    rem /**
+    rem  * Uninstalls the BBj plugin with the given name.
+    rem  * 
+    rem  * @param pluginName! The name of the plugin to uninstall
+    rem  */
     method public void uninstallPlugin(InstalledBBjPlugin installedPlugin!)
         if(installedPlugin! = null()) then
             throw "Unknown plugin: " + pluginName!, 255
