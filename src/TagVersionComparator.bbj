@@ -105,8 +105,4 @@ class public TagVersionComparator implements Comparator
         methodret version!
     methodend
 
-    method public Boolean equals(Object obj!)
-        methodret Boolean.FALSE
-    methodend
-
 classend
