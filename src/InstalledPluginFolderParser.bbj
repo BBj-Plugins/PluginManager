@@ -14,8 +14,9 @@ use com.google.gson.JsonArray
 use com.google.gson.JsonParser
 use com.google.gson.JsonObject
 
-use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/PluginManager.bbj::PluginManager
+
+use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
 use ::PluginManager/src/InstalledBBjPlugin.bbj::InstalledBBjPlugin
 use ::PluginManager/src/BBjPluginListParser.bbj::BBjPluginListParser
@@ -166,6 +167,10 @@ class public InstalledPluginFolderParser
         installedPlugin!.setDescription(jsonObject!.get("description").getAsString())
         installedPlugin!.setVersion(jsonObject!.get("version").getAsString())
         installedPlugin!.setAuthor(jsonObject!.get("author").getAsString())
+
+        if jsonObject!.has("mutable") then
+            installedPlugin!.setMutable(jsonObject!.get("mutable").getAsBoolean())
+        endif
 
         jsonFileReader!.close()
 

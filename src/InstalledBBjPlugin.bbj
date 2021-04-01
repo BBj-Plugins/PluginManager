@@ -32,6 +32,11 @@ class public InstalledBBjPlugin extends BBjPlugin
     
     rem the installation directory of the plugin
     field private File installationDirectory!
+
+    rem Indicates whether the plugin is mutable or not 
+    rem Usually the pre-installed plug-ins are immutable and considered 
+    rem part of the BBj product and can therefore not be uninstalled
+    field private boolean mutable!
     
     field private ArrayList demoProgramNameList!
 
@@ -39,6 +44,7 @@ class public InstalledBBjPlugin extends BBjPlugin
         #updateAvailable! = Boolean.FALSE
         #hasDemo! = Boolean.FALSE
         #hasConfigurationProgram! = Boolean.FALSE
+        #mutable! = Boolean.TRUE
     methodend
     
     method public void setProjectURL(String projectURL!)
@@ -63,6 +69,14 @@ class public InstalledBBjPlugin extends BBjPlugin
     
     method public File getInstallationDirectory()
         methodret #installationDirectory!
+    methodend
+
+    method public void setMutable(Boolean mutable!)
+        #mutable! = mutable!
+    methodend
+
+    method public Boolean isMutable()
+        methodret #mutable!
     methodend
     
     method public void setHasDemo(Boolean hasDemo!)

@@ -576,6 +576,7 @@ class public InstalledPluginTab
             #updateDemoButtonState(null())
             #updateConfigureButtonState(null())
             #updateInstalledPluginInformation()
+
             #btnUninstallPlugin!.setEnabled(0)
             
             #sysGui!.setRepaintEnabled(Boolean.TRUE)
@@ -623,8 +624,12 @@ class public InstalledPluginTab
 
         #updateInstalledPluginInformation()
 
-        rem Enabling the uninstall button
-        #btnUninstallPlugin!.setEnabled(1)
+        if installedPlugin!.isMutable() then
+            rem Enabling the uninstall button
+            #btnUninstallPlugin!.setEnabled(1)
+        else
+            #btnUninstallPlugin!.setEnabled(0)
+        endif
         
         #sysGui!.setRepaintEnabled(Boolean.TRUE)
     methodend
