@@ -13,6 +13,7 @@ class public RemotePluginTab
 
     field private ArrayList pluginList!
     field private ArrayList sortedPluginList!
+    field private BBjString selectedPluginName!
 
     rem The available plugin tab's controls
     field private BBjButton btnInstallPlugin!
@@ -325,6 +326,7 @@ REM         #btnClearSearchBar!.setImageFile("PluginManager/icons/CancelCross-16
     rem  * Refreshes the available plugin grid by adding the plugins which are missing tags
     rem  */
     method public void includeDevelopmentPlugins(BBjCheckOnEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
         #updateTabEntries(#sortedPluginList!, Boolean.TRUE)
         #sysGui!.setRepaintEnabled(1)
@@ -334,6 +336,7 @@ REM         #btnClearSearchBar!.setImageFile("PluginManager/icons/CancelCross-16
     rem  * Refreshes the available plugin grid by only displaying the plugins having tags
     rem  */
     method public void excludeDevelopmentPlugins(BBjCheckOffEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
         #updateTabEntries(#sortedPluginList!,Boolean.FALSE)
         #sysGui!.setRepaintEnabled(1)
@@ -345,6 +348,7 @@ REM         #btnClearSearchBar!.setImageFile("PluginManager/icons/CancelCross-16
         if(event! <> null()) then
             row = event!.getRow()
             column = event!.getColumn()
+            
             grid! = cast(BBjStandardGrid,event!.getControl())
         else
             grid! = #grdPlugins!
@@ -546,6 +550,13 @@ REM         #pluginList! = pluginList!
             next i
             #grdPlugins!.setNumRows(vect!.size() / 5)
             #grdPlugins!.setCellText(0, 0, vect!)
+      
+            for i=0 to #grdPlugins!.getNumRows()-1
+                if #grdPlugins!.getCell(i, 1).getText() = #selectedPluginName! then
+                    #grdPlugins!.setSelectedCell(i,1)
+                    methodret
+                endif   
+            next i
         endif
 
         #grdPlugins!.deselectAllCells()
