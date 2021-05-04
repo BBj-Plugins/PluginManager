@@ -295,6 +295,7 @@ class public RemotePluginTab
     rem  * Refreshes the available plugin grid by adding the plugins which are missing tags
     rem  */
     method public void includeDevelopmentPlugins(BBjCheckOnEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
         #updateTabEntries(#pluginList!, Boolean.TRUE)
         #sysGui!.setRepaintEnabled(1)
@@ -304,6 +305,7 @@ class public RemotePluginTab
     rem  * Refreshes the available plugin grid by only displaying the plugins having tags
     rem  */
     method public void excludeDevelopmentPlugins(BBjCheckOffEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
         #updateTabEntries(#pluginList!,Boolean.FALSE)
         #sysGui!.setRepaintEnabled(1)
@@ -317,7 +319,6 @@ class public RemotePluginTab
             column = event!.getColumn()
             
             grid! = cast(BBjStandardGrid,event!.getControl())
-            #selectedPluginName! = grid!.getCell(row, 1).getText()
         else
             grid! = #grdPlugins!
             row = grid!.getSelectedRow()
