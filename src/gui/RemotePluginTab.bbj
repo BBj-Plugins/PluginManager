@@ -12,6 +12,7 @@ class public RemotePluginTab
     field private BBjChildWindow childWindow!
 
     field private ArrayList pluginList!
+    field private BBjString selectedPluginName!
 
     rem The available plugin tab's controls
     field private BBjButton btnInstallPlugin!
@@ -314,7 +315,9 @@ class public RemotePluginTab
         if(event! <> null()) then
             row = event!.getRow()
             column = event!.getColumn()
+            
             grid! = cast(BBjStandardGrid,event!.getControl())
+            #selectedPluginName! = grid!.getCell(row, 1).getText()
         else
             grid! = #grdPlugins!
             row = grid!.getSelectedRow()
@@ -465,6 +468,13 @@ class public RemotePluginTab
             next i
             #grdPlugins!.setNumRows(vect!.size() / 5)
             #grdPlugins!.setCellText(0, 0, vect!)
+      
+            for i=0 to #grdPlugins!.getNumRows()-1
+                if #grdPlugins!.getCell(i, 1).getText() = #selectedPluginName! then
+                    #grdPlugins!.setSelectedCell(i,1)
+                    methodret
+                endif   
+            next i
         endif
 
         #grdPlugins!.deselectAllCells()
