@@ -12,10 +12,14 @@ class public RemotePluginTab
     field private BBjChildWindow childWindow!
 
     field private ArrayList pluginList!
+    field private ArrayList sortedPluginList!
 
     rem The available plugin tab's controls
     field private BBjButton btnInstallPlugin!
     field private BBjCheckBox cbxIncludeDevPlugins!
+    field private BBjInputE iESearchBar!
+    field private BBjButton btnSearch!
+    field private BBjButton btnClearSearchBar!
     field private BBjListButton hiddenListButton!
     field private BBjProgressBar pbInstallation!
     field private BBjStandardGrid grdPlugins!
@@ -57,7 +61,34 @@ class public RemotePluginTab
         #cbxIncludeDevPlugins!.setSelected(0)
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_ON, #this!, "includeDevelopmentPlugins")
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_OFF, #this!, "excludeDevelopmentPlugins")
-
+        
+        control_width = 200
+        control_height = 25
+        row_x = cw_width - control_width - space - 70
+        cw_next_id = childWindow!.getAvailableControlID()
+        #iESearchBar! = childWindow!.addInputE(cw_next_id, row_x, row_y, control_width, control_height)
+        #iESearchBar!.setCallback(BBjAPI.ON_INPUT_KEYPRESS, #this!, "searchEnterPressed")
+        #iESearchBar!.setPlaceholder("Search...")
+        
+        control_width = 25
+        control_height = 25
+        row_x = cw_width - control_width - space - 20
+        cw_next_id = childWindow!.getAvailableControlID()
+        #btnSearch! = childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "1")
+        #btnSearch!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "searchBtnPressed")
+        #btnSearch!.setImageSize(16, 16)
+        #btnSearch!.setImageFile("PluginManager/icons/Icon.MonoSeries.BlackWhite.Black.ReadingGlass.Normal.16x16.png")
+        
+        control_width = 25
+        control_height = 25
+        row_x = cw_width - control_width - space - 45
+        cw_next_id = childWindow!.getAvailableControlID()
+        #btnClearSearchBar! = childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "X")
+        #btnClearSearchBar!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "clearBtnPressed")
+        #btnClearSearchBar!.setImageSize(16, 16)
+REM         #btnClearSearchBar!.setImageFile("PluginManager/icons/CancelCross-16x16.png")
+        #btnClearSearchBar!.setImageFile("PluginManager/icons/Icon.MonoSeries.BlackWhite.Black.CancelCross.Normal.16x16.png")
+        
         control_width = 200
         control_height = 25
         row_x = cw_width - control_width - space - 20
@@ -68,7 +99,7 @@ class public RemotePluginTab
 
         rem new row
         row_x = 10
-        control_width = cw_width - 2 * space -20
+        control_width = cw_width - 2 * space - 20
         control_height = 175
         cw_next_id = childWindow!.getAvailableControlID()
         #grdPlugins! = childWindow!.addGrid(cw_next_id, row_x, row_Y, control_width, control_height, $8140$)
@@ -295,7 +326,7 @@ class public RemotePluginTab
     rem  */
     method public void includeDevelopmentPlugins(BBjCheckOnEvent event!)
         #sysGui!.setRepaintEnabled(0)
-        #updateTabEntries(#pluginList!, Boolean.TRUE)
+        #updateTabEntries(#sortedPluginList!, Boolean.TRUE)
         #sysGui!.setRepaintEnabled(1)
     methodend
 
@@ -304,7 +335,7 @@ class public RemotePluginTab
     rem  */
     method public void excludeDevelopmentPlugins(BBjCheckOffEvent event!)
         #sysGui!.setRepaintEnabled(0)
-        #updateTabEntries(#pluginList!,Boolean.FALSE)
+        #updateTabEntries(#sortedPluginList!,Boolean.FALSE)
         #sysGui!.setRepaintEnabled(1)
     methodend
 
@@ -319,6 +350,12 @@ class public RemotePluginTab
             grid! = #grdPlugins!
             row = grid!.getSelectedRow()
             column = grid!.getSelectedColumn()
+        endif
+        
+        
+        if (#sortedPluginList!.isEmpty()) then
+            rem Do nothing
+            methodret
         endif
 
         grid!.setEditable(0)
@@ -399,6 +436,44 @@ class public RemotePluginTab
         bbjapi().postCustomEvent(PluginManagerUI.getINSTALL_PLUGIN_REQUEST(), map!)
     methodend
     
+    method public void searchBtnPressed(BBjButtonPushEvent event!)
+        searchText$ = #iESearchBar!.getText().toLowerCase()
+        #search(searchText$)
+    methodend
+    
+    method public void searchEnterPressed(BBjInputKeypressEvent event!)
+         if event!.getKeyCode() = 13 then
+            searchText$ = #iESearchBar!.getText().toLowerCase()
+            #search(searchText$)
+         endif
+    methodend
+    
+    method public void clearBtnPressed(BBjButtonPushEvent event!)
+        #iESearchBar!.setText("")
+        searchText$ = #iESearchBar!.getText().toLowerCase()
+        #search(searchText$)
+    methodend
+    
+    method public void search(BBjString searchText$)
+        declare BBjVector vect!
+        declare ArrayList tagList!
+        vect! = new BBjVector()
+        
+        if #pluginList!.isEmpty() then
+            methodret
+        fi 
+        
+        for i=0 to #pluginList!.size()-1
+            remotePlugin! = cast(RemoteBBjPlugin, #pluginList!.get(i))
+            
+            if remotePlugin!.getName().toLowerCase().contains(searchText$) then
+                vect!.add(remotePlugin!)
+            endif
+        next i
+        
+        #updateTabEntries(vect!, #cbxIncludeDevPlugins!.isSelected())
+    methodend
+    
     method public void pluginGridMouseUp(BBjGridMouseUpEvent event!)
         #updatePluginInformation()
     methodend
@@ -428,6 +503,7 @@ class public RemotePluginTab
     rem  * Updates the entries of the ChildWindow controls
     rem  */
     method public void updateTabEntries(ArrayList pluginList!)
+        #pluginList! = pluginList!
         includeDevelopmentVersions! = #cbxIncludeDevPlugins!.isSelected()
         #updateTabEntries(pluginList!, includeDevelopmentVersions!)
     methodend
@@ -436,20 +512,25 @@ class public RemotePluginTab
     method private void updateTabEntries(ArrayList pluginList!, Boolean includeDevelopmentVersions!)
         declare BBjVector vect!
         vect! = new BBjVector()
-
-        #pluginList! = pluginList!
-
+        
+        #sortedPluginList! = pluginList!
+REM         #pluginList! = pluginList!
+        
+        if #sortedPluginList!.size() = 0 then
+            #grdPlugins!.setNumRows(0)
+            methodret
+        fi
+            
         rem removing the old entries
         #grdPlugins!.clearMainGrid()
-        if(!#pluginList!.isEmpty()) then
+        if(!#sortedPluginList!.isEmpty()) then
             declare RemoteBBjPlugin remotePlugin!
-            for i=0 to #pluginList!.size()-1
-                remotePlugin! = cast(RemoteBBjPlugin, #pluginList!.get(i))
-
+            for i=0 to #sortedPluginList!.size()-1
+                remotePlugin! = cast(RemoteBBjPlugin, #sortedPluginList!.get(i))
                 if(!includeDevelopmentVersions! AND remotePlugin!.isDevelopmentPlugin()) then
                     continue
                 endif
-
+                
                 vect!.add(remotePlugin!.getID())
                 vect!.add(remotePlugin!.getName())
                 tag! = remotePlugin!.getTagList(includeDevelopmentVersions!, Boolean.TRUE).get(0)
@@ -469,7 +550,7 @@ class public RemotePluginTab
 
         #grdPlugins!.deselectAllCells()
         #grdPlugins!.setSelectedCell(0,0)
-
+        
         #pluginGridRowSelected(null())
         #updatePluginInformation()
     methodend
