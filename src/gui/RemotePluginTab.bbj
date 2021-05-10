@@ -289,6 +289,7 @@ class public RemotePluginTab
         #pbInstallation!.setText("Plugin Installed")
         wait 1
         #pbInstallation!.setVisible(0)
+        #btnInstallPlugin!.setEnabled(0)
     methodend
 
     rem /**
@@ -376,11 +377,14 @@ class public RemotePluginTab
 
         declare RemoteBBjPlugin remotePlugin!
         remotePlugin! = #getSelectedPlugin()
+        
 
         if(remotePlugin! = null()) then
             rem TODO throw error
             methodret
         endif
+
+        #selectedPluginName! = remotePlugin!.getName()
 
         tagName! = #grdPlugins!.getCellText(row, 2)
 
