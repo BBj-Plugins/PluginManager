@@ -19,8 +19,6 @@ class public RemotePluginTab
     field private BBjButton btnInstallPlugin!
     field private BBjCheckBox cbxIncludeDevPlugins!
     field private BBjInputE iESearchBar!
-    field private BBjButton btnSearch!
-    field private BBjButton btnClearSearchBar!
     field private BBjListButton hiddenListButton!
     field private BBjProgressBar pbInstallation!
     field private BBjStandardGrid grdPlugins!
@@ -65,30 +63,11 @@ class public RemotePluginTab
         
         control_width = 200
         control_height = 25
-        row_x = cw_width - control_width - space - 70
-        cw_next_id = childWindow!.getAvailableControlID()
-        #iESearchBar! = childWindow!.addInputE(cw_next_id, row_x, row_y, control_width, control_height)
-        #iESearchBar!.setCallback(BBjAPI.ON_INPUT_KEYPRESS, #this!, "searchEnterPressed")
-        #iESearchBar!.setPlaceholder("Search...")
-        
-        control_width = 25
-        control_height = 25
         row_x = cw_width - control_width - space - 20
         cw_next_id = childWindow!.getAvailableControlID()
-        #btnSearch! = childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "1")
-        #btnSearch!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "searchBtnPressed")
-        #btnSearch!.setImageSize(16, 16)
-        #btnSearch!.setImageFile("PluginManager/icons/Icon.MonoSeries.BlackWhite.Black.ReadingGlass.Normal.16x16.png")
-        
-        control_width = 25
-        control_height = 25
-        row_x = cw_width - control_width - space - 45
-        cw_next_id = childWindow!.getAvailableControlID()
-        #btnClearSearchBar! = childWindow!.addButton(cw_next_id, row_x, row_y, control_width, control_height, "X")
-        #btnClearSearchBar!.setCallback(BBjAPI.ON_BUTTON_PUSH, #this!, "clearBtnPressed")
-        #btnClearSearchBar!.setImageSize(16, 16)
-REM         #btnClearSearchBar!.setImageFile("PluginManager/icons/CancelCross-16x16.png")
-        #btnClearSearchBar!.setImageFile("PluginManager/icons/Icon.MonoSeries.BlackWhite.Black.CancelCross.Normal.16x16.png")
+        #iESearchBar! = childWindow!.addInputE(cw_next_id, row_x, row_y, control_width, control_height)
+        #iESearchBar!.setCallback(BBjAPI.ON_EDIT_MODIFY, #this!, "inputEModify")
+        #iESearchBar!.setPlaceholder("Search...")
         
         control_width = 200
         control_height = 25
@@ -452,20 +431,7 @@ REM         #btnClearSearchBar!.setImageFile("PluginManager/icons/CancelCross-16
         bbjapi().postCustomEvent(PluginManagerUI.getINSTALL_PLUGIN_REQUEST(), map!)
     methodend
     
-    method public void searchBtnPressed(BBjButtonPushEvent event!)
-        searchText$ = #iESearchBar!.getText().toLowerCase()
-        #search(searchText$)
-    methodend
-    
-    method public void searchEnterPressed(BBjInputKeypressEvent event!)
-         if event!.getKeyCode() = 13 then
-            searchText$ = #iESearchBar!.getText().toLowerCase()
-            #search(searchText$)
-         endif
-    methodend
-    
-    method public void clearBtnPressed(BBjButtonPushEvent event!)
-        #iESearchBar!.setText("")
+    method public void inputEModify(BBjEditModifyEvent event!)
         searchText$ = #iESearchBar!.getText().toLowerCase()
         #search(searchText$)
     methodend
