@@ -430,7 +430,7 @@ class public RemotePluginTab
     methodend
     
     method public void inputEModify(BBjEditModifyEvent event!)
-        searchText$ = #iESearchBar!.getText().toLowerCase()
+        searchText$ = event!.getText().toLowerCase()
         #search(searchText$)
     methodend
     
