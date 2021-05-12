@@ -301,8 +301,6 @@ class public RemotePluginTab
         #pbInstallation!.setVisible(0)
         
         #iESearchBar!.setVisible(1)
-        #btnClearSearchBar!.setVisible(1)
-        #btnSearch!.setVisible(1)
     methodend
 
     rem /**
