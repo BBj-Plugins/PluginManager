@@ -5,6 +5,7 @@ use java.util.ArrayList
 use ::PluginManager/src/Tag.bbj::Tag
 use ::PluginManager/PluginManagerUI.bbj::PluginManagerUI
 use ::PluginManager/src/RemoteBBjPlugin.bbj::RemoteBBjPlugin
+use ::PluginManager/src/Tag.bbj::Tag
 
 class public RemotePluginTab
 
@@ -12,6 +13,8 @@ class public RemotePluginTab
     field private BBjChildWindow childWindow!
 
     field private ArrayList pluginList!
+    field private ArrayList sortedPluginList!
+    field private BBjString selectedPluginName!
 
     rem The available plugin tab's controls
     field private BBjButton btnInstallPlugin!
@@ -57,7 +60,7 @@ class public RemotePluginTab
         #cbxIncludeDevPlugins!.setSelected(0)
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_ON, #this!, "includeDevelopmentPlugins")
         #cbxIncludeDevPlugins!.setCallback(BBjAPI.ON_CHECK_OFF, #this!, "excludeDevelopmentPlugins")
-
+        
         control_width = 200
         control_height = 25
         row_x = cw_width - control_width - space - 20
@@ -68,7 +71,7 @@ class public RemotePluginTab
 
         rem new row
         row_x = 10
-        control_width = cw_width - 2 * space -20
+        control_width = cw_width - 2 * space - 20
         control_height = 175
         cw_next_id = childWindow!.getAvailableControlID()
         #grdPlugins! = childWindow!.addGrid(cw_next_id, row_x, row_Y, control_width, control_height, $8140$)
@@ -94,6 +97,9 @@ class public RemotePluginTab
         #grdPlugins!.setColumnAlignment(3, #grdPlugins!.GRID_ALIGN_LEFT)
         #grdPlugins!.setColumnAlignment(4, #grdPlugins!.GRID_ALIGN_LEFT)
         #grdPlugins!.setFitToGrid(1)
+        #grdPlugins!.setColumnUserSortable(1, Boolean.TRUE)
+        #grdPlugins!.setColumnUserSortable(3, Boolean.TRUE)
+        #grdPlugins!.setColumnUserSortable(4, Boolean.TRUE)
 
         #hiddenListButton! = childWindow!.addListButton(childWindow!.getAvailableControlID(),-100,-100,0,0, $4000$)
         #hiddenListButton!.setSize(100, 300)
@@ -294,8 +300,9 @@ class public RemotePluginTab
     rem  * Refreshes the available plugin grid by adding the plugins which are missing tags
     rem  */
     method public void includeDevelopmentPlugins(BBjCheckOnEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
-        #updateTabEntries(#pluginList!, Boolean.TRUE)
+        #updateTabEntries(#sortedPluginList!, Boolean.TRUE)
         #sysGui!.setRepaintEnabled(1)
     methodend
 
@@ -303,8 +310,9 @@ class public RemotePluginTab
     rem  * Refreshes the available plugin grid by only displaying the plugins having tags
     rem  */
     method public void excludeDevelopmentPlugins(BBjCheckOffEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
-        #updateTabEntries(#pluginList!,Boolean.FALSE)
+        #updateTabEntries(#sortedPluginList!,Boolean.FALSE)
         #sysGui!.setRepaintEnabled(1)
     methodend
 
@@ -314,11 +322,18 @@ class public RemotePluginTab
         if(event! <> null()) then
             row = event!.getRow()
             column = event!.getColumn()
+            
             grid! = cast(BBjStandardGrid,event!.getControl())
         else
             grid! = #grdPlugins!
             row = grid!.getSelectedRow()
             column = grid!.getSelectedColumn()
+        endif
+        
+        
+        if (#sortedPluginList!.isEmpty()) then
+            rem Do nothing
+            methodret
         endif
 
         grid!.setEditable(0)
@@ -428,28 +443,80 @@ class public RemotePluginTab
     rem  * Updates the entries of the ChildWindow controls
     rem  */
     method public void updateTabEntries(ArrayList pluginList!)
+        #pluginList! = pluginList!
         includeDevelopmentVersions! = #cbxIncludeDevPlugins!.isSelected()
         #updateTabEntries(pluginList!, includeDevelopmentVersions!)
     methodend
 
+    method public void createRelatedData()
+        declare ArrayList tagList!
+        declare ArrayList cellTextArrayList!
+        declare RemoteBBjPlugin remotePlugin!
 
+        dateArrayList! = new ArrayList()
+        cellTextArrayList! = new ArrayList()
+        tagList! = new ArrayList()
+        
+        for i=0 to #sortedPluginList!.size() - 1
+
+            remotePlugin! = cast(RemoteBBjPlugin, #sortedPluginList!.get(i))
+            
+            tagList! = remotePlugin!.getTagList(#cbxIncludeDevPlugins!.isSelected(), Boolean.FALSE)
+            
+            if tagList!.size() <> 0 then
+                tag! = tagList!.get(0)
+                dateMillis! = cast(java.util.Date, tag!.getLastChangeDate()).getTime()
+                dateArrayList!.add(dateMillis!)
+            endif
+        next i
+        
+        for i=0 to #grdPlugins!.getNumRows() - 1
+            text! = #grdPlugins!.getCellText(i, 3)
+            cellTextArrayList!.add(text!)
+        next i
+
+        declare Integer[] dateArray!
+        dateArray! = new Integer[dateArrayList!.size()]
+        dateArray![] = dateArrayList!.toArray()
+        
+        declare String[] cellTextArray!
+        cellTextArray! = new String[cellTextArrayList!.size()]
+        cellTextArray![] = cellTextArrayList!.toArray()
+        
+        for i=0 to #grdPlugins!.getNumRows()-1
+            #grdPlugins!.setCellData(i,3,str(cellTextArray![i]),str(dateArray![i]))
+            #grdPlugins!.setCellText(i,3,str(cellTextArray![i]))
+        next i
+        #grdPlugins!.resort()
+    methodend
+    
+    method private void setDateColumsSortable()
+        for i=0 to #grdPlugins!.getNumRows()-1
+            #grdPlugins!.setColumnSortedByRelatedData(3,i)
+        next i
+    methodend
+    
     method private void updateTabEntries(ArrayList pluginList!, Boolean includeDevelopmentVersions!)
         declare BBjVector vect!
         vect! = new BBjVector()
-
-        #pluginList! = pluginList!
-
+        
+        #sortedPluginList! = pluginList!
+        
+        if #sortedPluginList!.size() = 0 then
+            #grdPlugins!.setNumRows(0)
+            methodret
+        endif
+            
         rem removing the old entries
         #grdPlugins!.clearMainGrid()
-        if(!#pluginList!.isEmpty()) then
+        if(!#sortedPluginList!.isEmpty()) then
             declare RemoteBBjPlugin remotePlugin!
-            for i=0 to #pluginList!.size()-1
-                remotePlugin! = cast(RemoteBBjPlugin, #pluginList!.get(i))
-
+            for i=0 to #sortedPluginList!.size()-1
+                remotePlugin! = cast(RemoteBBjPlugin, #sortedPluginList!.get(i))
                 if(!includeDevelopmentVersions! AND remotePlugin!.isDevelopmentPlugin()) then
                     continue
                 endif
-
+                
                 vect!.add(remotePlugin!.getID())
                 vect!.add(remotePlugin!.getName())
                 tag! = remotePlugin!.getTagList(includeDevelopmentVersions!, Boolean.TRUE).get(0)
@@ -465,11 +532,20 @@ class public RemotePluginTab
             next i
             #grdPlugins!.setNumRows(vect!.size() / 5)
             #grdPlugins!.setCellText(0, 0, vect!)
+            #createRelatedData()
+            #setDateColumsSortable()
+      
+            for i=0 to #grdPlugins!.getNumRows()-1
+                if #grdPlugins!.getCell(i, 1).getText() = #selectedPluginName! then
+                    #grdPlugins!.setSelectedCell(i,1)
+                    methodret
+                endif   
+            next i
         endif
 
         #grdPlugins!.deselectAllCells()
         #grdPlugins!.setSelectedCell(0,0)
-
+        
         #pluginGridRowSelected(null())
         #updatePluginInformation()
     methodend
@@ -529,18 +605,18 @@ class public RemotePluginTab
             #resetPluginInformation()
             methodret
         endif
-
+        
         rem updatig the plugin status
         if(remotePlugin!.isInstalled()) then
             #txtPluginStatus!.setText("Installed")
         else
             #txtPluginStatus!.setText("Not installed")
         endif
-
+        
         #txtPluginName!.setText(remotePlugin!.getName())
         #txtPluginDescription!.setText(remotePlugin!.getDescription())
         #btnPluginProjectURL!.setText(remotePlugin!.getProjectURL())
-
+        
         declare Tag tag!
         declare ArrayList tagList!
         tagList! = remotePlugin!.getTagList(Boolean.TRUE, Boolean.TRUE)
