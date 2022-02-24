@@ -12,6 +12,7 @@ class public RemotePluginTab
     field private BBjChildWindow childWindow!
 
     field private ArrayList pluginList!
+    field private BBjString selectedPluginName!
 
     rem The available plugin tab's controls
     field private BBjButton btnInstallPlugin!
@@ -288,12 +289,14 @@ class public RemotePluginTab
         #pbInstallation!.setText("Plugin Installed")
         wait 1
         #pbInstallation!.setVisible(0)
+        #btnInstallPlugin!.setEnabled(0)
     methodend
 
     rem /**
     rem  * Refreshes the available plugin grid by adding the plugins which are missing tags
     rem  */
     method public void includeDevelopmentPlugins(BBjCheckOnEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
         #updateTabEntries(#pluginList!, Boolean.TRUE)
         #sysGui!.setRepaintEnabled(1)
@@ -303,6 +306,7 @@ class public RemotePluginTab
     rem  * Refreshes the available plugin grid by only displaying the plugins having tags
     rem  */
     method public void excludeDevelopmentPlugins(BBjCheckOffEvent event!)
+        #selectedPluginName! = #grdPlugins!.getCell(#grdPlugins!.getSelectedRow(), 1).getText()
         #sysGui!.setRepaintEnabled(0)
         #updateTabEntries(#pluginList!,Boolean.FALSE)
         #sysGui!.setRepaintEnabled(1)
@@ -314,6 +318,7 @@ class public RemotePluginTab
         if(event! <> null()) then
             row = event!.getRow()
             column = event!.getColumn()
+            
             grid! = cast(BBjStandardGrid,event!.getControl())
         else
             grid! = #grdPlugins!
@@ -372,11 +377,14 @@ class public RemotePluginTab
 
         declare RemoteBBjPlugin remotePlugin!
         remotePlugin! = #getSelectedPlugin()
+        
 
         if(remotePlugin! = null()) then
             rem TODO throw error
             methodret
         endif
+
+        #selectedPluginName! = remotePlugin!.getName()
 
         tagName! = #grdPlugins!.getCellText(row, 2)
 
@@ -465,6 +473,13 @@ class public RemotePluginTab
             next i
             #grdPlugins!.setNumRows(vect!.size() / 5)
             #grdPlugins!.setCellText(0, 0, vect!)
+      
+            for i=0 to #grdPlugins!.getNumRows()-1
+                if #grdPlugins!.getCell(i, 1).getText() = #selectedPluginName! then
+                    #grdPlugins!.setSelectedCell(i,1)
+                    methodret
+                endif   
+            next i
         endif
 
         #grdPlugins!.deselectAllCells()
