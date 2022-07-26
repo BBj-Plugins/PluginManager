@@ -111,6 +111,9 @@ class public InstalledPluginTab
         #grdPlugins!.setRowHeight(20)
         #grdPlugins!.setFitToGrid(1)
         #grdPlugins!.setColumnWidth(0, 0)
+        #grdPlugins!.setColumnUserSortable(1, Boolean.TRUE)
+        #grdPlugins!.setColumnUserSortable(3, Boolean.TRUE)
+        #grdPlugins!.setColumnUserSortable(4, Boolean.TRUE)
 
         #grdPlugins!.setCallback(BBjAPI.ON_GRID_SELECT_ROW, #this!, "installedPluginGridRowSelected")
         #grdPlugins!.setCallback(BBjAPI.ON_GRID_MOUSE_UP, #this!, "installedPluginGridMouseUp")
@@ -362,6 +365,48 @@ class public InstalledPluginTab
         bbjapi().postCustomEvent(PluginManagerUI.getRUN_CONFIGURATION_PROGRAM(), installedPlugin!)
     methodend
 
+    method public void createRelatedData()
+        declare ArrayList tagList!
+        declare ArrayList cellTextArrayList!
+        declare InstalledBBjPlugin installedPlugin!
+
+        dateArrayList! = new ArrayList()
+        cellTextArrayList! = new ArrayList()
+        tagList! = new ArrayList()
+        
+        for i=0 to #pluginList!.size() - 1
+
+            installedPlugin! = cast(InstalledBBjPlugin, #pluginList!.get(i))
+            
+            dateMillis! = cast(java.util.Date, installedPlugin!.getInstallationDate()).getTime()
+            dateArrayList!.add(dateMillis!)
+        next i
+        
+        for i=0 to #grdPlugins!.getNumRows() - 1
+            text! = #grdPlugins!.getCellText(i, 3)
+            cellTextArrayList!.add(text!)
+        next i
+
+        declare Integer[] dateArray!
+        dateArray! = new Integer[dateArrayList!.size()]
+        dateArray![] = dateArrayList!.toArray()
+        
+        declare String[] cellTextArray!
+        cellTextArray! = new String[cellTextArrayList!.size()]
+        cellTextArray![] = cellTextArrayList!.toArray()
+        
+        for i=0 to #grdPlugins!.getNumRows()-1
+            #grdPlugins!.setCellData(i,3,str(cellTextArray![i]),str(dateArray![i]))
+        next i
+        #grdPlugins!.resort()
+    methodend
+    
+    method private void setDateColumsSortable()
+        for i=0 to #grdPlugins!.getNumRows()-1
+            #grdPlugins!.setColumnSortedByRelatedData(3,i)
+        next i
+    methodend
+    
     method public void updateTabEntries(ArrayList pluginList!)
         declare BBjVector vect!
         vect! = new BBjVector()
@@ -385,6 +430,8 @@ class public InstalledPluginTab
                 endif
             next i
             #grdPlugins!.setCellText(0, 0, vect!)
+            #createRelatedData()
+            #setDateColumsSortable()
         endif
         #grdPlugins!.deselectAllCells()
 
