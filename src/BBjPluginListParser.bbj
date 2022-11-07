@@ -82,7 +82,7 @@ class public BBjPluginListParser
         remotePlugin!.setProjectURL(jsonObject!.get("project_url").getAsString())
         remotePlugin!.setApiURL(jsonObject!.get("api_url").getAsString())
         remotePlugin!.setDownloadURL(jsonObject!.get("download_url").getAsString())
-        remotePlugin!.setAuthor(jsonObject!.get("author").getAsString())
+        remotePlugin!.setAuthor(jsonObject!.get("author").getAsString(), err=*next)
 
         if(jsonObject!.has("password_required")) then
             remotePlugin!.setPasswordRequired(jsonObject!.get("password_required").getAsBoolean())
